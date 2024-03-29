@@ -1,3 +1,13 @@
+===
+Installation of fork for Hive
+===
+#. Clone my fork `git clone git@github.com:Awallace3/NeuralPLexer.git && cd NeuralPLexer`
+#. Create env `conda env create -f npl.yml`
+#. Install dev version `pip install -e .`
+#. copy my zip file for pre-trained models from my share directory on hive `cp /storage/hive/project/chem-sherrill/awallace43/share/neuralplexermodels_downstream_datasets_predictions.zip .`
+#. `unzip neuralplexermodels_downstream_datasets_predictions.zip`
+#. Run first example `cd example/1Y0L_NPLexer && bash run.sh`
+
 ====
 NeuralPLexer
 ====
@@ -46,7 +56,7 @@ Example usage for the base model with a template structure in pdb format:
                            --sampler=langevin_simulated_annealing
 
 
-NeuralPLexer CLI supports the prediction of biological complexes without ligands, with a single ligand, with multiple ligands (e.g. substrate-cofactor systems), 
+NeuralPLexer CLI supports the prediction of biological complexes without ligands, with a single ligand, with multiple ligands (e.g. substrate-cofactor systems),
 and/or with receptors of single or multiple protein chains. Common input options are:
 
 - :code:`input-receptor` and :code:`input-ligand` are the input protein and ligand structures;
