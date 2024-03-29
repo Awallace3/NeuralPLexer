@@ -109,4 +109,4 @@ ENV/
 ./ngc_scripts
 neuralplexermodels_downstream_datasets_predictions.zip
 neuralplexermodels_downstream_datasets_predictions/
-./example/1Y0L_NPLexer/npl_out
+example/1Y0L_NPLexer/npl_out
