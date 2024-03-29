@@ -1,14 +1,15 @@
-===
-Installation of fork for Hive
-===
+============
+Installation
+============
 
-1. Clone my fork
-2. Create env
-3. Install dev version
-4. copy my zip file for pre-trained models from my share directory on hive
-6. Run first example
+ 1. Clone my fork
+ 2. Create env
+ 3. Install dev version
+ 4. copy my zip file for pre-trained models from my share directory on hive
+ 6. Run first example
 
 .. code-block:: bash
+
     git clone git@github.com:Awallace3/NeuralPLexer.git && cd NeuralPLexer
     conda env create -f npl.yml
     pip install -e .
@@ -16,9 +17,11 @@ Installation of fork for Hive
     unzip neuralplexermodels_downstream_datasets_predictions.zip
     cd example/1Y0L_NPLexer && bash run.sh
 
-====
+
+
+============
 NeuralPLexer
-====
+============
 
 Official implementation of NeuralPLexer, a deep generative model to jointly predict protein-ligand complex 3D structures and beyond.
 
