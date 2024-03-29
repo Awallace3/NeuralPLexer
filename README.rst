@@ -1,12 +1,13 @@
 ===
 Installation of fork for Hive
 ===
-#. Clone my fork `git clone git@github.com:Awallace3/NeuralPLexer.git && cd NeuralPLexer`
-#. Create env `conda env create -f npl.yml`
-#. Install dev version `pip install -e .`
-#. copy my zip file for pre-trained models from my share directory on hive `cp /storage/hive/project/chem-sherrill/awallace43/share/neuralplexermodels_downstream_datasets_predictions.zip .`
-#. `unzip neuralplexermodels_downstream_datasets_predictions.zip`
-#. Run first example `cd example/1Y0L_NPLexer && bash run.sh`
+
+1. Clone my fork `git clone git@github.com:Awallace3/NeuralPLexer.git && cd NeuralPLexer`
+2. Create env `conda env create -f npl.yml`
+3. Install dev version `pip install -e .`
+4. copy my zip file for pre-trained models from my share directory on hive `cp /storage/hive/project/chem-sherrill/awallace43/share/neuralplexermodels_downstream_datasets_predictions.zip .`
+5. `unzip neuralplexermodels_downstream_datasets_predictions.zip`
+6. Run first example `cd example/1Y0L_NPLexer && bash run.sh`
 
 ====
 NeuralPLexer
