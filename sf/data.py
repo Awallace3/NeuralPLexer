@@ -249,6 +249,7 @@ def structure_prediction(args, df):
         args.input_ligand = r["ligand_path"]
         args.input_receptor = r["protein_path"]
         args.sample_id = r["sample_id"]
+        args.out_path = pdbbind_output + "/" + args.pdb_id
         if args.start_time != "auto":
             args.start_time = float(args.start_time)
         if args.task == "single_sample_trajectory":
