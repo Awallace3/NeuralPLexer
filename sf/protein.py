@@ -61,8 +61,10 @@ class Args:
     rank_outputs_by_confidence: bool = False
     csv_path: str = None
 
-pdbbind_dir = "/storage/home/hhive1/awallace43/data/share/PDBBind_processed"
-pdbbind_output = "/storage/home/hhive1/awallace43/data/share/PDBBind_nlp"
+# pdbbind_dir = "/storage/home/hhive1/awallace43/data/share/PDBBind_processed"
+# pdbbind_output = "/storage/home/hhive1/awallace43/data/share/PDBBind_nlp"
+pdbbind_dir = "/storage/home/hhive1/awallace43/data/share/CASF-2016/coreset"
+pdbbind_output = "/storage/home/hhive1/awallace43/data/share/casf16_npl"
 
 
 def pdbbind_csv_creation(pdbbind_dir=pdbbind_dir):
@@ -81,7 +83,7 @@ def pdbbind_csv_creation(pdbbind_dir=pdbbind_dir):
     }
     for i in pdb_dirs:
         pdb_id = i.split("/")[-1]
-        protein_path = i + "/" + pdb_id + "_protein_processed.pdb"
+        protein_path = i + "/" + pdb_id + "_protein.pdb"
         ligand_path = i + "/" + pdb_id + "_ligand.sdf"
         # reference_path = i + '/' + pdb_id + '_reference.sdf'
         # protein_path = pdb_id + "_protein_processed.pdb"

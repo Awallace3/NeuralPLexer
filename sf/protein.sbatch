@@ -6,6 +6,7 @@
 #SBATCH --time=03-00:00:00
 #SBATCH --gpus-per-node=1
 #SBATCH -phive-gpu
+#SBATCH --output=outs/protein.out
 
 cd $SLURM_SUBMIT_DIR
 conda init
