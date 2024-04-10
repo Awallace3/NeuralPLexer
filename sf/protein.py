@@ -246,10 +246,10 @@ def structure_prediction(args, df):
     for n, r in df.iterrows():
         print(r['pdb_id'])
         print(r)
-        args.input_ligand = r["ligand_path"]
+        # args.input_ligand = r["ligand_path"]
         args.input_receptor = r["protein_path"]
         args.sample_id = n
-        args.out_path = pdbbind_output + "/" + r['pdb_id']
+        args.out_path = pdbbind_output + "/" + r['pdb_id'] + "/protein_only"
         if os.path.exists(args.out_path):
             continue
         os.mkdir(args.out_path)
