@@ -12,16 +12,7 @@ from glob import glob
 import torch_geometric
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
-from torch_geometric.nn.models import ViSNet
-
-if torch.cuda.is_available():
-    gpu_enabled = True
-    device = torch.device("cuda:0")
-    print("running on the GPU")
-else:
-    gpu_enabled = False
-    device = torch.device("cpu")
-    print("running on the CPU")
+# from torch_geometric.nn.models import ViSNet
 
 
 dirs = glob("/storage/hive/project/chem-sherrill/awallace43/share/PDBBind_nlp/*")
@@ -48,7 +39,7 @@ for d in dirs:
         protein_atoms = ase.io.read('ligand.xyz')
         #make a data point
         combined_atoms = ligand_atoms + protein_atoms
-        
+
         print('putting it in torch')
         z = torch.tensor(combined_atoms.get_atomic_numbers(), dtype=torch.int) # Required for ViSNet
         pos = torch.tensor(combined_atoms.get_positions(), dtype=torch.float) # Required for ViSNet
@@ -68,6 +59,6 @@ for d in dirs:
         print('removing files')
         os.remove('protein.xyz')
         os.remove('ligand.xyz')
-        break 
+        break
 
 print(data_list[0])
