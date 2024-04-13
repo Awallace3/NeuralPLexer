@@ -1,10 +1,11 @@
-name: npl
+name: npl_td
 channels:
   - bioconda
   - pytorch
   - nvidia
   - conda-forge
 dependencies:
+  - ase
   - _libgcc_mutex=0.1
   - _openmp_mutex=4.5
   - absl-py=2.1.0

@@ -63,8 +63,8 @@ class Args:
 
 # pdbbind_dir = "/storage/home/hhive1/awallace43/data/share/PDBBind_processed"
 # pdbbind_output = "/storage/home/hhive1/awallace43/data/share/PDBBind_nlp"
-pdbbind_dir = "/storage/home/hhive1/awallace43/data/share/CASF-2016/coreset"
-pdbbind_output = "/storage/home/hhive1/awallace43/data/share/casf16_npl"
+pdbbind_dir = "/storage/ice1/7/3/awallace43/CASF-2016/coreset"
+pdbbind_output = "/storage/ice1/7/3/awallace43/casf2016"
 
 
 def pdbbind_csv_creation(pdbbind_dir=pdbbind_dir):

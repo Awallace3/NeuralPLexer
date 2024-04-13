@@ -12,15 +12,17 @@ import re
 import subprocess
 import warnings
 from subprocess import check_output
-
 import numpy as np
 import pandas as pd
 import torch
 import tqdm
+print('RDKit')
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
+print("AF")
 from af_common.residue_constants import restype_1to3
+print("NPL")
 from neuralplexer.data.indexers import collate_numpy
 from neuralplexer.data.physical import calc_heavy_atom_LJ_clash_fraction
 from neuralplexer.data.pipeline import (featurize_protein_and_ligands,
@@ -33,6 +35,7 @@ from neuralplexer.model.wrappers import NeuralPlexer
 from neuralplexer.util.pdb3d import (compute_ligand_rmsd, compute_tm_rmsd,
                                      get_lddt_bs)
 torch.set_grad_enabled(False)
+print("Start")
 
 @dataclass
 class Args:
@@ -61,8 +64,8 @@ class Args:
     rank_outputs_by_confidence: bool = False
     csv_path: str = None
 
-pdbbind_dir = "/storage/home/hhive1/awallace43/data/share/CASF-2016/coreset"
-pdbbind_output = "/storage/home/hhive1/awallace43/data/share/casf16_npl"
+pdbbind_dir = "/storage/ice1/7/3/awallace43/CASF-2016/coreset"
+pdbbind_output = "/storage/ice1/7/3/awallace43/casf2016/pl"
 
 # 1a30_ligand.mol2  1a30_ligand_opt.mol2  1a30_ligand.sdf  1a30_pocket.pdb  1a30_protein.mol2  1a30_protein.pdb
 
