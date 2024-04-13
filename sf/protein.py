@@ -34,6 +34,8 @@ from neuralplexer.util.pdb3d import (compute_ligand_rmsd, compute_tm_rmsd,
                                      get_lddt_bs)
 torch.set_grad_enabled(False)
 
+PDBBIND = True
+
 @dataclass
 class Args:
     task: str = "batched_structure_sampling"

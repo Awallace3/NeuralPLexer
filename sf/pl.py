@@ -37,6 +37,8 @@ from neuralplexer.util.pdb3d import (compute_ligand_rmsd, compute_tm_rmsd,
 torch.set_grad_enabled(False)
 print("Start")
 
+PDBBIND = True
+
 @dataclass
 class Args:
     task: str = "batched_structure_sampling"
@@ -64,16 +66,20 @@ class Args:
     rank_outputs_by_confidence: bool = False
     csv_path: str = None
 
-pdbbind_dir = "/storage/ice1/7/3/awallace43/CASF-2016/coreset"
-pdbbind_output = "/storage/ice1/7/3/awallace43/casf2016/pl"
+
+if PDBBIND:
+    pdbbind_dir = "/storage/ice1/7/3/awallace43/PDBBind_processed/"
+    pdbbind_output = "/storage/ice1/7/3/awallace43/pdb_gen/pl"
+else:
+    pdbbind_dir = "/storage/ice1/7/3/awallace43/CASF-2016/coreset"
+    pdbbind_output = "/storage/ice1/7/3/awallace43/casf2016/pl"
+
+
 
 # 1a30_ligand.mol2  1a30_ligand_opt.mol2  1a30_ligand.sdf  1a30_pocket.pdb  1a30_protein.mol2  1a30_protein.pdb
 
 def pdbbind_csv_creation(pdbbind_dir=pdbbind_dir):
     csv_path = "pdbbind_processed.csv"
-    if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path)
-        return csv_path, df
     pdb_dirs = glob.glob(pdbbind_dir + "/*")
     data_dict = {
         "sample_id": [],
@@ -85,8 +91,12 @@ def pdbbind_csv_creation(pdbbind_dir=pdbbind_dir):
     }
     for i in pdb_dirs:
         pdb_id = i.split("/")[-1]
-        protein_path = i + "/" + pdb_id + "_protein.pdb"
-        ligand_path = i + "/" + pdb_id + "_ligand.sdf"
+        if PDBBIND:
+            protein_path = i + "/" + pdb_id + "_protein_processed.pdb"
+            ligand_path = i + "/" + pdb_id + "_ligand.sdf"
+        else:
+            protein_path = i + "/" + pdb_id + "_protein.pdb"
+            ligand_path = i + "/" + pdb_id + "_ligand.sdf"
         # reference_path = i + '/' + pdb_id + '_reference.sdf'
         # protein_path = pdb_id + "_protein_processed.pdb"
         # ligand_path = pdb_id + "_ligand.sdf"

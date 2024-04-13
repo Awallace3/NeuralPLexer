@@ -8,6 +8,7 @@
 #SBATCH --output=outs/pl.out
 
 cd $SLURM_SUBMIT_DIR
+conda init
 conda activate npl_td
 
 export OMP_NUM_THREADS=6
