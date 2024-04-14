@@ -12,15 +12,17 @@ import re
 import subprocess
 import warnings
 from subprocess import check_output
-
 import numpy as np
 import pandas as pd
 import torch
 import tqdm
+print('RDKit')
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
+print("AF")
 from af_common.residue_constants import restype_1to3
+print("NPL")
 from neuralplexer.data.indexers import collate_numpy
 from neuralplexer.data.physical import calc_heavy_atom_LJ_clash_fraction
 from neuralplexer.data.pipeline import (featurize_protein_and_ligands,
@@ -33,14 +35,16 @@ from neuralplexer.model.wrappers import NeuralPlexer
 from neuralplexer.util.pdb3d import (compute_ligand_rmsd, compute_tm_rmsd,
                                      get_lddt_bs)
 torch.set_grad_enabled(False)
+print("Start")
 
-PDBBIND = True
+PDBBIND = False
 if PDBBIND:
     pdbbind_dir = "/storage/ice1/7/3/awallace43/PDBBind_processed/"
-    pdbbind_output = "/storage/ice1/7/3/awallace43/pdb_gen/p"
+    pdbbind_output = "/storage/ice1/7/3/awallace43/pdb_gen/pl"
 else:
     pdbbind_dir = "/storage/ice1/7/3/awallace43/CASF-2016/coreset"
-    pdbbind_output = "/storage/ice1/7/3/awallace43/casf2016/p"
+    pdbbind_output = "/storage/ice1/7/3/awallace43/casf2016/pl"
+
 
 @dataclass
 class Args:
@@ -70,15 +74,16 @@ class Args:
     csv_path: str = None
 
 
+
+
+# 1a30_ligand.mol2  1a30_ligand_opt.mol2  1a30_ligand.sdf  1a30_pocket.pdb  1a30_protein.mol2  1a30_protein.pdb
+
 def pdbbind_csv_creation(pdbbind_dir=pdbbind_dir):
     if PDBBIND:
         v = "pdbbind"
     else:
         v = 'casf'
-    csv_path = f"{v}_processed_p.csv"
-    if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path)
-        return csv_path, df
+    csv_path = f"{v}_processed_pl.csv"
     pdb_dirs = glob.glob(pdbbind_dir + "/*")
     data_dict = {
         "sample_id": [],
@@ -259,7 +264,7 @@ def structure_prediction(args, df):
     for n, r in df.iterrows():
         print(r['pdb_id'])
         print(r)
-        # args.input_ligand = r["ligand_path"]
+        args.input_ligand = r["ligand_path"]
         args.input_receptor = r["protein_path"]
         args.sample_id = n
         args.out_path = pdbbind_output + "/" + r['pdb_id']

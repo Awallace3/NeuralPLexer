@@ -34,7 +34,7 @@ from neuralplexer.util.pdb3d import (compute_ligand_rmsd, compute_tm_rmsd,
                                      get_lddt_bs)
 torch.set_grad_enabled(False)
 
-PDBBIND = True
+PDBBIND = False
 if PDBBIND:
     pdbbind_dir = "/storage/ice1/7/3/awallace43/PDBBind_processed/"
     pdbbind_output = "/storage/ice1/7/3/awallace43/pdb_gen/p"

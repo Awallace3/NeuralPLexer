@@ -15,7 +15,7 @@ from torch_geometric.loader import DataLoader
 # from torch_geometric.nn.models import ViSNet
 
 
-dirs = glob("/storage/hive/project/chem-sherrill/awallace43/share/PDBBind_nlp/*")
+dirs = glob("*")
 
 cutoff = 8.0
 edge_dim = 50
@@ -53,12 +53,12 @@ for d in dirs:
         edge_index = torch.tensor(np.array([source, target]), dtype=torch.float)
         edge_attr = torch.tensor(distances, dtype=torch.float).view(-1, 1)
 
-        # create data object
-        _d = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, z=z, pos=pos)
-        data_list.append(_d)
-        print('removing files')
-        os.remove('protein.xyz')
-        os.remove('ligand.xyz')
-        break
+    # create data object
+    _d = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, z=z, pos=pos)
+    data_list.append(_d)
+    print('removing files')
+    os.remove('protein.xyz')
+    os.remove('ligand.xyz')
+    break
 
 print(data_list[0])

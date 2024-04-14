@@ -38,6 +38,12 @@ torch.set_grad_enabled(False)
 print("Start")
 
 PDBBIND = True
+if PDBBIND:
+    pdbbind_dir = "/storage/ice1/7/3/awallace43/PDBBind_processed/"
+    pdbbind_output = "/storage/ice1/7/3/awallace43/pdb_gen/pl"
+else:
+    pdbbind_dir = "/storage/ice1/7/3/awallace43/CASF-2016/coreset"
+    pdbbind_output = "/storage/ice1/7/3/awallace43/casf2016/pl"
 
 @dataclass
 class Args:
@@ -67,19 +73,17 @@ class Args:
     csv_path: str = None
 
 
-if PDBBIND:
-    pdbbind_dir = "/storage/ice1/7/3/awallace43/PDBBind_processed/"
-    pdbbind_output = "/storage/ice1/7/3/awallace43/pdb_gen/pl"
-else:
-    pdbbind_dir = "/storage/ice1/7/3/awallace43/CASF-2016/coreset"
-    pdbbind_output = "/storage/ice1/7/3/awallace43/casf2016/pl"
 
 
 
 # 1a30_ligand.mol2  1a30_ligand_opt.mol2  1a30_ligand.sdf  1a30_pocket.pdb  1a30_protein.mol2  1a30_protein.pdb
 
 def pdbbind_csv_creation(pdbbind_dir=pdbbind_dir):
-    csv_path = "pdbbind_processed.csv"
+    if PDBBIND:
+        v = "pdbbind"
+    else:
+        v = 'casf'
+    csv_path = f"{v}_processed_pl.csv"
     pdb_dirs = glob.glob(pdbbind_dir + "/*")
     data_dict = {
         "sample_id": [],
