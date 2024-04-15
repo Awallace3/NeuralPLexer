@@ -1,4 +1,7 @@
 from src.dataset import AffiNETy_dataset, AffiNETy_PL_L_dataset
+from src.models import AffiNETy, AffiNETy_PL_L
+import os
+import argparse
 
 print("imports done!\n")
 
@@ -32,7 +35,7 @@ else:
 
 
 def main():
-    AffiNETy_PL_L_dataset(
+    ds = AffiNETy_PL_L_dataset(
         root=f"data_PL_L_{v}",
         dataset=v,
         NUM_THREADS=NUM_THREADS,
@@ -42,6 +45,8 @@ def main():
         num_confs_protein=2,
         ensure_processed=False,
     )
+    m = AffiNETy(dataset=ds, model=AffiNETy_PL_L)
+    m.train()
     return
 
 
