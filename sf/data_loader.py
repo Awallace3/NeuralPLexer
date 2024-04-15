@@ -9,6 +9,7 @@ from ase import neighborlist
 from ase.io import read
 
 import os.path as osp
+import multiprocessing
 
 import torch
 import torch.nn as nn
@@ -17,6 +18,7 @@ import torch_geometric
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Dataset
+
 
 # from torch_geometric.nn.models import ViSNet
 from rdkit.Chem import AllChem
@@ -137,7 +139,6 @@ class AffiNETy_dataset(Dataset):
 
     @property
     def processed_file_names(self):
-        # return ["data_46628.pt", "data_46629.pt"]
         return [f"{self.dataset}_{i}.pt" for i in range(self.num_systems)]
 
     def download(self):
@@ -145,98 +146,115 @@ class AffiNETy_dataset(Dataset):
         # path = download_url(url, self.raw_dir)
         pass
 
+    def process_single_pdb(pdb_id):
+        return
+    """
+    TODO: implement parallelism...
+    def process_single_pdb(pdb_id, ...):
+        # ... implementation of process for single pdb_id ...
+
+    def process(self):
+        with Pool(processes=<number_of_processes>, initializer=initializer) as pool:
+            # Passing the task to multiprocessing Pool
+            pool.map(process_single_pdb, [(pdb_id, ...) for pdb_id in self.pdb_ids])
+    """
+
     def process(self):
         idx = 0
         print(f"Creating {self.dataset}...")
         for i in self.pdb_ids:
-            pls = {
-                "x": [],
-                "edge_index": [],
-                "edge_attr": [],
-                "z": [],
-                "pos": [],
-            }
-            ps = pls.copy()
-            ls = pls.copy()
-            print(f"pdb_id: {i}")
-            if os.path.exists(osp.join(self.processed_dir, f"{self.dataset}_{i}.pt")):
-                print('    already processed')
-                continue
-            lig = self.df_lig[self.df_lig['pdb_id'] == i]['conformers'].to_list()[0]
-            for j in self.num_confs:
-                # PL
-                if (
-                    not os.path.exists(f"{pl_dir}/{i}/prot_{j}.pdb")
-                    or not os.path.exists(f"{pl_dir}/{i}/lig_{j}.sdf")
-                    or not os.path.exists(f"{p_dir}/{i}/prot_{j}.pdb")
-                    or not os.path.exists(f"{p_dir}/{i}/prot_{j}.pdb")
-                ):
+            try:
+                pls = {
+                    "x": [],
+                    "edge_index": [],
+                    "edge_attr": [],
+                    "z": [],
+                    "pos": [],
+                }
+                ps = pls.copy()
+                ls = pls.copy()
+                print(f"pdb_id: {i}")
+                if os.path.exists(osp.join(self.processed_dir, f"{self.dataset}_{i}.pt")):
+                    print('    already processed')
                     continue
-                pl_pro = read(f"{pl_dir}/{i}/prot_{j}.pdb")
-                pl_lig = read(f"{pl_dir}/{i}/lig_{j}.sdf")
-                pl = pl_pro + pl_lig
-                x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(pl)
-                pls["x"].append(x)
-                pls["edge_index"].append(edge_index)
-                pls["edge_attr"].append(edge_attr)
-                pls["z"].append(z)
-                pls["pos"].append(pos)
-                # P
-                p = read(f"{p_dir}/{i}/prot_{j}.pdb")
-                x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(p)
-                ps["x"].append(x)
-                ps["edge_index"].append(edge_index)
-                ps["edge_attr"].append(edge_attr)
-                ps["z"].append(z)
-                ps["pos"].append(pos)
-                # L
-                l = rdkit_mol_to_ase_atoms(lig[j])
-                x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(l)
-                ls["x"].append(x)
-                ls["edge_index"].append(edge_index)
-                ls["edge_attr"].append(edge_attr)
-                ls["z"].append(z)
-                ls["pos"].append(pos)
-            if len(pls['x']) == 0 or len(ps['x']) == 0 or len(ls['x'])==0:
+                lig = self.df_lig[self.df_lig['pdb_id'] == i]['conformers'].to_list()[0]
+                for j in self.num_confs:
+                    # PL
+                    if (
+                        not os.path.exists(f"{pl_dir}/{i}/prot_{j}.pdb")
+                        or not os.path.exists(f"{pl_dir}/{i}/lig_{j}.sdf")
+                        or not os.path.exists(f"{p_dir}/{i}/prot_{j}.pdb")
+                        or not os.path.exists(f"{p_dir}/{i}/prot_{j}.pdb")
+                    ):
+                        continue
+                    pl_pro = read(f"{pl_dir}/{i}/prot_{j}.pdb")
+                    pl_lig = read(f"{pl_dir}/{i}/lig_{j}.sdf")
+                    pl = pl_pro + pl_lig
+                    x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(pl)
+                    pls["x"].append(x)
+                    pls["edge_index"].append(edge_index)
+                    pls["edge_attr"].append(edge_attr)
+                    pls["z"].append(z)
+                    pls["pos"].append(pos)
+                    # P
+                    p = read(f"{p_dir}/{i}/prot_{j}.pdb")
+                    x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(p)
+                    ps["x"].append(x)
+                    ps["edge_index"].append(edge_index)
+                    ps["edge_attr"].append(edge_attr)
+                    ps["z"].append(z)
+                    ps["pos"].append(pos)
+                    # L
+                    l = rdkit_mol_to_ase_atoms(lig[j])
+                    x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(l)
+                    ls["x"].append(x)
+                    ls["edge_index"].append(edge_index)
+                    ls["edge_attr"].append(edge_attr)
+                    ls["z"].append(z)
+                    ls["pos"].append(pos)
+                if len(pls['x']) == 0 or len(ps['x']) == 0 or len(ls['x'])==0:
+                    continue
+                _d = Data(
+                    # pl
+                    pl_x=pls["x"],
+                    pl_edge_index=pls["edge_index"],
+                    pl_edge_attr=pls["edge_attr"],
+                    pl_z=pls["z"],
+                    pl_pos=pls["pos"],
+                    # p
+                    p_x=ps["x"],
+                    p_edge_index=ps["edge_index"],
+                    p_edge_attr=ps["edge_attr"],
+                    p_z=ps["z"],
+                    p_pos=ps["pos"],
+                    # l
+                    l_x=ls["x"],
+                    l_edge_index=ls["edge_index"],
+                    l_edge_attr=ls["edge_attr"],
+                    l_z=ls["z"],
+                    l_pos=ls["pos"],
+                )
+                if idx == 0:
+                    print(_d)
+
+                if self.pre_filter is not None and not self.pre_filter(data):
+                    continue
+
+                if self.pre_transform is not None:
+                    _d = self.pre_transform(_d)
+
+                torch.save(_d, osp.join(self.processed_dir, f"{self.dataset}_{i}.pt"))
+                idx += 1
+            except Exception:
+                print(f'{i} failed...')
                 continue
-            _d = Data(
-                # pl
-                pl_x=pls["x"],
-                pl_edge_index=pls["edge_index"],
-                pl_edge_attr=pls["edge_attr"],
-                pl_z=pls["z"],
-                pl_pos=pls["pos"],
-                # p
-                p_x=ps["x"],
-                p_edge_index=ps["edge_index"],
-                p_edge_attr=ps["edge_attr"],
-                p_z=ps["z"],
-                p_pos=ps["pos"],
-                # l
-                l_x=ls["x"],
-                l_edge_index=ls["edge_index"],
-                l_edge_attr=ls["edge_attr"],
-                l_z=ls["z"],
-                l_pos=ls["pos"],
-            )
-            if idx == 0:
-                print(_d)
-
-            if self.pre_filter is not None and not self.pre_filter(data):
-                continue
-
-            if self.pre_transform is not None:
-                _d = self.pre_transform(_d)
-
-            torch.save(_d, osp.join(self.processed_dir, f"{self.dataset}_{i}.pt"))
-            idx += 1
         return
 
     def len(self):
         return len(self.processed_file_names)
 
     def get(self, idx):
-        data = torch.load(osp.join(self.processed_dir, f"{self.dataset}_{i}.pt"))
+        data = torch.load(osp.join(self.processed_dir, f"{self.dataset}_{idx}.pt"))
         return data
 
 
