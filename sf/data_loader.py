@@ -287,27 +287,30 @@ class AffiNETy_dataset(Dataset):
                 pl_lig = read(f"{pl_dir}/{i}/lig_{j}.sdf")
                 pl = pl_pro + pl_lig
                 x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(pl)
-                pls["x"] = x
-                pls["edge_index"] = edge_index
-                pls["edge_attr"] = edge_attr
-                pls["z"] = z
-                pls["pos"] = pos
+                pls["x"].append(x)
+                pls["edge_index"].append(edge_index)
+                pls["edge_attr"].append(edge_attr)
+                pls["z"].append(z)
+                pls["pos"].append(pos)
                 # P
                 p = read(f"{p_dir}/{i}/prot_{j}.pdb")
                 x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(p)
-                ps["x"] = x
-                ps["edge_index"] = edge_index
-                ps["edge_attr"] = edge_attr
-                ps["z"] = z
-                ps["pos"] = pos
-                # P
-                l = read(f"{p_dir}/{i}/prot_{j}.pdb")
-                x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(l)
-                ls["x"] = x
-                ls["edge_index"] = edge_index
-                ls["edge_attr"] = edge_attr
-                ls["z"] = z
-                ls["pos"] = pos
+                ps["x"].append(x)
+                ps["edge_index"].append(edge_index)
+                ps["edge_attr"].append(edge_attr)
+                ps["z"].append(z)
+                ps["pos"].append(pos)
+                # L
+                l = self.df_lig[self.df_lig['pdb_id'] == i]['conformer'][0]
+                x, edge_index, edge_attr, z, pos = mol_to_ViSNet_data(l)
+                ls["x"].append(x)
+                ls["edge_index"].append(edge_index)
+                ls["edge_attr"].append(edge_attr)
+                ls["z"].append(z)
+                ls["pos"].append(pos)
+            pls = {k: torch.tensor(v) for k, v in pls.items()}
+            ps = {k: torch.tensor(v) for k, v in ps.items()}
+            ls = {k: torch.tensor(v) for k, v in ls.items()}
             _d = Data(
                 # pl
                 pl_x=pl["x"],
