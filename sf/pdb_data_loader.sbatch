@@ -3,8 +3,7 @@
 #SBATCH -N1 -n12 #number of nodes and cores required per job
 #SBATCH --mem-per-cpu=8G #memory per core
 #SBATCH --time=16:00:00
-#SBATCH --gpus-per-node=1
-#SBATCH -pice-gpu
+#SBATCH -pice-cpu
 #SBATCH --output=outs/dl_affinety_pdbbind.out
 
 cd $SLURM_SUBMIT_DIR

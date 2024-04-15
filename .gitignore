@@ -113,5 +113,6 @@ example/1Y0L_NPLexer/npl_out
 sf/data
 sf/data_casf
 sf/data_pdbbind
+sf/data_PL_L_casf
 *.out
 tmp.py
