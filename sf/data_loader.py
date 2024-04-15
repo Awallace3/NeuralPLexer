@@ -4,7 +4,7 @@ import argparse
 import pandas as pd
 import math
 
-from src.dataset import AffiNETy_dataset, AffiNETy_PL_L_dataset
+from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset
 
 print("imports done!\n")
 
@@ -26,13 +26,13 @@ if PDBBIND:
     p_dir = "/storage/ice1/7/3/awallace43/pdb_gen/p"
     l_pkl = "/storage/ice1/7/3/awallace43/pdb_gen/l/pdbbind_final.pkl"
     v = "pdbbind"
+    power_ranking_file = "/storage/ice1/7/3/awallace43/index/INDEX_general_PL.2020.csv"
+    power_ranking_file_pkl = power_ranking_file.replace("csv", "pkl")
 else:
     pl_dir = "/storage/ice1/7/3/awallace43/casf2016/pl"
     p_dir = "/storage/ice1/7/3/awallace43/casf2016/p"
     l_pkl = "/storage/ice1/7/3/awallace43/casf2016/l/casf_final.pkl"
-    power_ranking_file = (
-        "/storage/ice1/7/3/awallace43/CASF-2016/power_ranking_coreset.csv"
-    )
+    power_ranking_file = "/storage/ice1/7/3/awallace43/CASF-2016/power_ranking_coreset.csv"
     power_ranking_file_pkl = power_ranking_file.replace("csv", "pkl")
     v = "casf"
 
@@ -92,7 +92,7 @@ def main():
     #     num_confs=8,
     # )
 
-    AffiNETy_PL_L_dataset(
+    AffiNETy_PL_P_L_dataset(
         root=f"data_PL_L_{v}",
         dataset=v,
         NUM_THREADS=NUM_THREADS,

@@ -1,4 +1,4 @@
-from src.dataset import AffiNETy_dataset, AffiNETy_PL_L_dataset
+from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset
 from src.models import AffiNETy, AffiNETy_PL_L
 import os
 import argparse
@@ -40,7 +40,7 @@ def main():
     print(v)
     print(v.pl_z)
     return
-    ds = AffiNETy_PL_L_dataset(
+    ds = AffiNETy_PL_P_L_dataset(
         root=f"data_PL_L_{v}",
         dataset=v,
         NUM_THREADS=NUM_THREADS,
