@@ -35,6 +35,11 @@ else:
 
 
 def main():
+    import torch
+    v = torch.load("./data_PL_L_casf/processed/casf_0.pt")
+    print(v)
+    print(v.pl_z)
+    return
     ds = AffiNETy_PL_L_dataset(
         root=f"data_PL_L_{v}",
         dataset=v,

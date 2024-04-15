@@ -8,19 +8,27 @@ from torch_geometric.nn.models import ViSNet
 
 
 class AffiNETy_PL_L(nn.Module):
-    def __init__(self, visnet_pl=ViSNet, visnet_l=ViSNet):
+    def __init__(self, visnet_pl=ViSNet(), visnet_l=ViSNet(), temperature=298.0,):
         """
         Initialize the model with two ViSNet instances.
 
         Parameters:
         - visnet_pl: Pretrained ViSNet model for PL graphs.
         - visnet_l: Pretrained ViSNet model for L graphs.
+
+        Objectives:
+        AffiNETy_PL_L is designed to take in N PL graphs, and M L graphs.
+        ViSNet will be evaluated on each graph with results.
+        data should be like:
+        the model will initially start with pre-trained ViSNet models,
+        but will use ViSNet on each pl set of graphs and ligand set of graphs
+        before performing a sum to predict the final ouptut value.
         """
         super(AffiNETy_PL_L, self).__init__()
         self.visnet_pl = visnet_pl
         self.visnet_l = visnet_l
 
-    def forward(self, data_list):
+    def forward(self, data):
         """
         Forward pass through the model.
 
@@ -29,49 +37,43 @@ class AffiNETy_PL_L(nn.Module):
 
         Returns:
         - torch.Tensor: The predicted output values.
+
+            _d = Data(
+                # pl
+                pl_x=pls["x"],
+                pl_edge_index=pls["edge_index"],
+                pl_edge_attr=pls["edge_attr"],
+                pl_z=pls["z"],
+                pl_pos=pls["pos"],
+                # l
+                l_x=ls["x"],
+                l_edge_index=ls["edge_index"],
+                l_edge_attr=ls["edge_attr"],
+                l_z=ls["z"],
+                l_pos=ls["pos"],
+            )
         """
-        results = []
-        for data in data_list:
-            # Process PL graphs
+        # pl_results = []
+        # l_results = []
+        print(data)
+        print(data.pl_z)
+        pl_energy = 0
+        for i in range(len(data.pl_z)):
             pl_out = self.visnet_pl(
-                data.pl_x, data.pl_edge_index, data.pl_edge_attr, data.pl_pos
+                z = data.pl_z[i], pos = data.pl_z[i], batch = data.batch
             )
-            # Process L graphs
+            pl_energy += pl_out
+        for i in range(len(data.l_z)):
             l_out = self.visnet_l(
-                data.l_x, data.l_edge_index, data.l_edge_attr, data.l_pos
+                z = data.l_z[i], pos = data.l_z[i], batch = data.batch
             )
-            # Combine results from both models
-            combined_result = pl_out.sum() + l_out.sum()
-            # Store the result for this sample
-            results.append(combined_result)
-        # Convert list of results to a tensor
-        return torch.stack(results)
+            l_energy += l_out
+        RT = 1.98720425864083 / 1000 * self.temperature  # (kcal * K) / (mol * K)
+        result = -torch.log(pl_energy - l_energy / RT)
+        return result
 
 
 # class AffiNETy_PL_L:
-#     """
-#     AffiNETy_PL_L is designed to take in N PL graphs, and M L graphs.
-#     ViSNet will be evaluated on each graph with results.
-#     data should be like:
-#         _d = Data(
-#             # pl
-#             pl_x=pls["x"],
-#             pl_edge_index=pls["edge_index"],
-#             pl_edge_attr=pls["edge_attr"],
-#             pl_z=pls["z"],
-#             pl_pos=pls["pos"],
-#             # l
-#             l_x=ls["x"],
-#             l_edge_index=ls["edge_index"],
-#             l_edge_attr=ls["edge_attr"],
-#             l_z=ls["z"],
-#             l_pos=ls["pos"],
-#             y=self.power_ranking_dict[i]
-#         )
-#     the model will initially start with pre-trained ViSNet models,
-#     but will use ViSNet on each pl set of graphs and ligand set of graphs
-#     before performing a sum to predict the final ouptut value.
-#     """
 #
 #     return
 
@@ -103,19 +105,11 @@ class AffiNETy:
         print(f"Batch size: {batch_size}")
         for epoch in range(epochs):
             for batch in train_loader:
+                print(f"{batch = }")
                 for data in batch.to_data_list():
                     optimizer.zero_grad()
                     out = self.model(
-                        data.pl_x,
-                        data.pl_edge_index,
-                        data.pl_edge_attr,
-                        data.pl_z,
-                        data.pl_pos,
-                        data.l_x,
-                        data.l_edge_index,
-                        data.l_edge_attr,
-                        data.l_z,
-                        data.l_pos,
+                        data
                     )
                     loss = criterion(out, data.y)
                     loss.backward()
@@ -124,16 +118,7 @@ class AffiNETy:
                 for data in batch.to_data_list():
                     self.model.eval()
                     out = self.model(
-                        data.pl_x,
-                        data.pl_edge_index,
-                        data.pl_edge_attr,
-                        data.pl_z,
-                        data.pl_pos,
-                        data.l_x,
-                        data.l_edge_index,
-                        data.l_edge_attr,
-                        data.l_z,
-                        data.l_pos,
+                        data
                     )
                     test_loss = criterion(out, data.y)
                     if verbose:
