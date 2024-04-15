@@ -111,5 +111,7 @@ neuralplexermodels_downstream_datasets_predictions.zip
 neuralplexermodels_downstream_datasets_predictions/
 example/1Y0L_NPLexer/npl_out
 sf/data
+sf/data_casf
+sf/data_pdbbind
 *.out
 tmp.py
