@@ -82,7 +82,7 @@ def ase_to_ViSNet_data_graphSage(
     x = F.one_hot(
         torch.tensor(ase_mol.get_atomic_numbers()) - 1, num_classes=node_dim
     ).float()
-    edge_index = torch.tensor(np.array([source, target]), dtype=torch.float)
+    edge_index = torch.tensor(np.array([source, target]), dtype=torch.int64)
     edge_attr = torch.tensor(distances, dtype=torch.float).view(-1, 1)
     return x, edge_index, edge_attr
 
@@ -384,10 +384,15 @@ class AffiNETy_dataset(Dataset):
         if not self.ensure_processed:
             return
         n, i, lig_confs = datapoint
+        print(f"pdb_id : {i} : {n}")
+        if i not in self.power_ranking_dict.keys() or not lig_confs:
+            print(f"{i} not in power_ranking_dict or lig_confs == None, skipping...")
+            return
         pls = {
             "x": [],
             "edge_index": [],
             "edge_attr": [],
+            'num_nodes': [],
         }
         ps = {
             "x": [],
@@ -401,7 +406,6 @@ class AffiNETy_dataset(Dataset):
             "z": [],
             "pos": [],
         }
-        print(f"pdb_id : {i} : {n}")
         pre_processed_path = f"{self.processed_dir}/../pre_processed/{self.dataset}_{i}.pt"
         if os.path.exists(pre_processed_path):
             print("    already processed")
@@ -425,6 +429,7 @@ class AffiNETy_dataset(Dataset):
                 pls["x"].append(x)
                 pls["edge_index"].append(edge_index)
                 pls["edge_attr"].append(edge_attr)
+                pls['num_nodes'] = len(pl.get_atomic_numbers())
                 # P
                 p = read(f"{self.p_dir}/{i}/prot_{j}.pdb")
                 x, edge_index, edge_attr = ase_to_ViSNet_data_graphSage(p)
@@ -457,8 +462,11 @@ class AffiNETy_dataset(Dataset):
         if len(pls["x"]) == 0 or len(ps["x"]) == 0 or len(ls["z"]) == 0 or failed:
             print("Failed to update:", len(pls['x']), len(ps['x']), len(ls['z']), failed)
             return
+
+
         _d = Data(
             # pl
+            num_nodes=pls['num_nodes'],
             pl_x=pls["x"],
             pl_edge_index=pls["edge_index"],
             pl_edge_attr=pls["edge_attr"],
@@ -505,9 +513,7 @@ class AffiNETy_dataset(Dataset):
         if self.NUM_THREADS > 1:
             with Pool(processes=self.NUM_THREADS) as pool:
                 for data_chunk in self.chunks(self.generate_data(), self.chunk_size):
-                    pool.imap(self.process_single_pdb, data_chunk)
-                pool.close()
-                pool.join()
+                    pool.map(self.process_single_pdb, data_chunk)
         else:
             for d in self.generate_data():
                 self.process_single_pdb(d)

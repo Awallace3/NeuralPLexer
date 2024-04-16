@@ -1,5 +1,5 @@
 from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset
-from src.models import AffiNETy, AffiNETy_PL_P_L
+from src.models import AffiNETy, AffiNETy_PL_P_L, AffiNETy_graphSage
 import os
 import argparse
 
@@ -35,22 +35,33 @@ else:
 
 
 def main():
-    # import torch
-    # v = torch.load("./data_PL_L_casf/processed/casf_0.pt")
-    # print(v)
-    # print(v.pl_z)
-    # return
-    ds = AffiNETy_PL_P_L_dataset(
-        root=f"data_PL_P_L_{v}",
+    # ds = AffiNETy_PL_P_L_dataset(
+    #     root=f"data_PL_P_L_{v}",
+    #     dataset=v,
+    #     NUM_THREADS=NUM_THREADS,
+    #     pl_dir=pl_dir,
+    #     l_pkl=l_pkl,
+    #     power_ranking_file=power_ranking_file_pkl,
+    #     num_confs_protein=2,
+    #     ensure_processed=False,
+    # )
+    ds = AffiNETy_dataset(
+        root=f"data_{v}",
         dataset=v,
         NUM_THREADS=NUM_THREADS,
         pl_dir=pl_dir,
+        p_dir=p_dir,
         l_pkl=l_pkl,
         power_ranking_file=power_ranking_file_pkl,
         num_confs_protein=2,
         ensure_processed=False,
     )
-    m = AffiNETy(dataset=ds, model=AffiNETy_PL_P_L, num_workers=NUM_THREADS)
+    m = AffiNETy(
+        dataset=ds,
+        model=AffiNETy_graphSage,
+        num_workers=NUM_THREADS,
+        use_GPU=True,
+    )
     m.train()
     return
 

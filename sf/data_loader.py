@@ -50,16 +50,20 @@ def unit_conversion(unit):
     return conversion_factor
 
 
-def process_K_label(l):
+def process_K_label(l: str):
     """
     We want to have K_d, assume all binding is inhibitory
     to get K_d = K_i to expand dataset
     """
+    l = l.strip()
     conv = unit_conversion(l[-2:])
-    v = float(l[3:-2])
-    if "Ki=" == l[:3] or "Kd=" == l[:3]:
+    if "Ki" == l[:2] or "Kd" == l[:2]:
+        l = l.replace("Ki", "").replace("Kd", "").replace("<", "").replace(">", "").replace("=", "").replace("~", "")
+        v = float(l[:-2])
         return -math.log(v * conv)
     elif "Ka=" == l[:3]:
+        l = l.replace("Ki", "").replace("Ki", "").replace("<", "").replace(">", "").replace("=", "").replace("~", "")
+        v = float(l[:-2])
         return math.log(v * conv)
     else:
         return None
@@ -71,8 +75,15 @@ def cleanup_input_labels():
     import pickle
     df = pd.read_csv(power_ranking_file, delimiter=",")
     df["pK"] = df["Ka"].apply(lambda x: process_K_label(x))
+    print(len(df))
+    df.dropna(subset=['pK'], inplace=True)
+    print(len(df))
     print(df)
-    mapping = pd.Series(df.pK.values, index=df.code).to_dict()
+    if 'code' in df.columns:
+        col = 'code'
+    else:
+        col = 'pdb_id'
+    mapping = pd.Series(df.pK.values, index=df[col]).to_dict()
     print(mapping)
     with open(power_ranking_file_pkl, 'wb') as handle:
         pickle.dump(mapping, handle, protocol=pickle.HIGHEST_PROTOCOL)
