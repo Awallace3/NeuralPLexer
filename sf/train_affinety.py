@@ -62,7 +62,9 @@ def main():
         num_workers=NUM_THREADS,
         use_GPU=True,
     )
-    m.train()
+    m.train(
+        batch_size=16,
+    )
     return
 
 

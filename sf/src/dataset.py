@@ -371,8 +371,9 @@ class AffiNETy_dataset(Dataset):
         if self.ensure_processed:
             return [f"{self.dataset}_{i}.pt" for i in self.pdb_ids]
         else:
-            vals = [os.path.basename(i) for i in glob(f"{self.processed_dir}/*")]
-            print(f"Only using subset: {len(vals)} / {len(self.pdb_ids)}")
+            vals = [os.path.basename(i) for i in glob(f"{self.processed_dir}/{self.dataset}*")]
+            # print(f"Only using subset: {len(vals)} / {len(self.pdb_ids)}")
+            # print(vals)
             return vals
 
     def download(self):
@@ -529,7 +530,7 @@ class AffiNETy_dataset(Dataset):
         return
 
     def len(self):
-        return len(self.processed_file_names)
+        return len(self.processed_file_names) - 1
 
     def get(self, idx):
         data = torch.load(osp.join(self.processed_dir, f"{self.dataset}_{idx}.pt"))

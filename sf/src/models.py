@@ -65,8 +65,8 @@ class AffiNETy_PL_P_L(nn.Module):
         """
         print(data)
         pl_es = torch.zeros(len(data.pl_z), dtype=torch.float, device=device)
-        p_es = torch.zeros(len(data.p_z), dtype=torch.float, device=device  )
-        l_es = torch.zeros(len(data.l_z), dtype=torch.float, device=device  )
+        p_es = torch.zeros(len(data.p_z), dtype=torch.float, device=device)
+        l_es = torch.zeros(len(data.l_z), dtype=torch.float, device=device)
         for i in range(len(data.l_z)):
             batch = torch.zeros(len(data.l_z[i]), dtype=torch.int64, device=device)
             l_es[i] = self.visnet_l(
@@ -90,18 +90,21 @@ class AffiNETy_PL_P_L(nn.Module):
             )[0]
 
         RT = 1.98720425864083 / 1000 * self.temperature  # (kcal * K) / (mol * K)
-        result = (
-            torch.mean(pl_es) - torch.mean(p_es) - torch.mean(l_es) / -RT
-        )
+        result = torch.mean(pl_es) - torch.mean(p_es) - torch.mean(l_es) / -RT
         return result
+
 
 class AffiNETy_graphSage(nn.Module):
     def __init__(
         self,
         pl_model=GraphSAGE(-1, 5, 3),
         p_model=GraphSAGE(-1, 5, 3),
-        l_model=ViSNet(),
+        l_model=GraphSAGE(-1, 5, 3),
+        # l_model=ViSNet(),
         temperature=298.0,
+        pl_in=2,
+        p_in=2,
+        l_in=20,
     ):
         """
         Initialize the model with two ViSNet instances.
@@ -124,6 +127,27 @@ class AffiNETy_graphSage(nn.Module):
         self.l_model = l_model
         self.temperature = temperature
 
+        self.pl_n1 = nn.Linear(pl_in, 32)
+        self.pl_relu1 = nn.ReLU()
+        self.pl_n2 = nn.Linear(32, 32)
+        self.pl_relu2 = nn.ReLU()
+        self.pl_n3 = nn.Linear(32, 1)
+        self.pl_relu3 = nn.ReLU()
+
+        self.p_n1 = nn.Linear(p_in, 32)
+        self.p_relu1 = nn.ReLU()
+        self.p_n2 = nn.Linear(32, 32)
+        self.p_relu2 = nn.ReLU()
+        self.p_n3 = nn.Linear(32, 1)
+        self.p_relu3 = nn.ReLU()
+
+        self.l_n1 = nn.Linear(l_in, 32)
+        self.l_relu1 = nn.ReLU()
+        self.l_n2 = nn.Linear(32, 32)
+        self.l_relu2 = nn.ReLU()
+        self.l_n3 = nn.Linear(32, 1)
+        self.l_relu3 = nn.ReLU()
+
     def forward(self, data, device):
         """
         Forward pass through the model.
@@ -134,34 +158,49 @@ class AffiNETy_graphSage(nn.Module):
         Returns:
         - torch.Tensor: The predicted output values.
         """
-        print(data)
+        # print(data)
         pl_es = torch.zeros(len(data.pl_x), dtype=torch.float, device=device)
-        p_es = torch.zeros(len(data.p_x), dtype=torch.float, device=device  )
-        l_es = torch.zeros(len(data.l_z), dtype=torch.float, device=device  )
+        p_es = torch.zeros(len(data.p_x), dtype=torch.float, device=device)
+        l_es = torch.zeros(len(data.l_z), dtype=torch.float, device=device)
+        # for i in range(len(data.l_z)):
+        #     batch = torch.zeros(len(data.l_z[i]), dtype=torch.int64, device=device)
+        #     l_es[i] = self.l_model(
+        #         z=data.l_z[i].to(device),
+        #         pos=data.l_pos[i].to(device),
+        #         batch=batch,
         for i in range(len(data.l_z)):
-            batch = torch.zeros(len(data.l_z[i]), dtype=torch.int64, device=device)
-            l_es[i] = self.l_model(
-                z=data.l_z[i].to(device),
-                pos=data.l_pos[i].to(device),
+            batch = torch.zeros(len(data.l_x[i]), dtype=torch.int64, device=device)
+            out = self.l_model(
+                x=data.l_x[i].to(device),
+                edge_index=data.l_edge_index[i].to(device),
+                edge_attr=data.l_edge_attr[i].to(device),
+                # x=x,
+                # edge_index=edge_index,
+                # edge_attr=edge_attr,
+                # z=data.l_z[i].to(device),
+                # pos=data.l_pos[i].to(device),
                 batch=batch,
-            )[0]
+            )
+            l_es[i] = torch.sum(out)
         for i in range(len(data.pl_x)):
             batch = torch.zeros(len(data.pl_x[i]), dtype=torch.int64, device=device)
-            x=torch.tensor(data.pl_x[i], dtype=torch.float).to(device)
-            edge_index=torch.tensor(data.pl_edge_index[i], dtype=torch.int64).to(device)
-            edge_attr= torch.tensor(data.pl_edge_attr[i],  dtype=torch.float ) .to(device)
+            # x = torch.tensor(data.pl_x[i], dtype=torch.float).to(device)
+            # edge_index = torch.tensor(data.pl_edge_index[i], dtype=torch.int64).to(
+            #     device
+            # )
+            # edge_attr = torch.tensor(data.pl_edge_attr[i], dtype=torch.float).to(device)
             # print(x)
             # print(edge_index)
             # print(edge_attr)
 
             # pl_es[i] = self.pl_model(
             out = self.pl_model(
-                # x=data.pl_x[i].to(device),
-                # edge_index=data.pl_edge_index[i].to(device),
-                # edge_attr=data.pl_edge_attr[i].to(device),
-                x=x,
-                edge_index=edge_index,
-                edge_attr=edge_attr,
+                x=data.pl_x[i].to(device),
+                edge_index=data.pl_edge_index[i].to(device),
+                edge_attr=data.pl_edge_attr[i].to(device),
+                # x=x,
+                # edge_index=edge_index,
+                # edge_attr=edge_attr,
                 # z=data.pl_z[i].to(device),
                 # pos=data.pl_pos[i].to(device),
                 batch=batch,
@@ -170,40 +209,63 @@ class AffiNETy_graphSage(nn.Module):
             # print(f'\n{pl_es[i] = }\n')
         for i in range(len(data.p_x)):
             batch = torch.zeros(len(data.p_x[i]), dtype=torch.int64, device=device)
-            x=torch.tensor(data.pl_x[i], dtype=torch.float).to(device)
-            edge_index=torch.tensor(data.pl_edge_index[i], dtype=torch.int64).to(device)
-            edge_attr= torch.tensor(data.pl_edge_attr[i],  dtype=torch.float ) .to(device)
+            # x = torch.tensor(data.pl_x[i], dtype=torch.float).to(device)
+            # edge_index = torch.tensor(data.pl_edge_index[i], dtype=torch.int64).to(
+            #     device
+            # )
+            # edge_attr = torch.tensor(data.pl_edge_attr[i], dtype=torch.float).to(device)
             out = self.p_model(
-                x=x,
-                edge_index=edge_index,
-                edge_attr=edge_attr,
-                # x=data.p_x[i].to(device),
-                # edge_index=data.p_edge_index[i].to(device),
-                # edge_attr=data.p_edge_attr[i].to(device),
+                # x=x,
+                # edge_index=edge_index,
+                # edge_attr=edge_attr,
+                x=data.p_x[i].to(device),
+                edge_index=data.p_edge_index[i].to(device),
+                edge_attr=data.p_edge_attr[i].to(device),
                 # z=data.p_z[i].to(device),
                 # pos=data.p_pos[i].to(device),
                 batch=batch,
             )
             p_es[i] = torch.sum(out)
 
+        pl_es, _ = torch.sort(pl_es)
+        p_es, _ = torch.sort(p_es)
+        l_es, _ = torch.sort(l_es)
+
+        # print(f"{pl_es = }\n{p_es = }\n{l_es}\n\n")
+
+        pl_e_avg =  self.pl_relu3(self.pl_n3(self.pl_relu2(self.pl_n2(self.pl_relu1(self.pl_n1(pl_es))))))
+        p_e_avg =  self.p_relu3(self.p_n3(self.p_relu2(self.p_n2(self.p_relu1(self.p_n1(p_es))))))
+        l_e_avg =  self.l_relu3(self.l_n3(self.l_relu2(self.l_n2(self.l_relu1(self.l_n1(l_es))))))
+
+        # print(f"{pl_e_avg = }\n{p_e_avg = }\n{l_e_avg}\n\n")
+
         RT = 1.98720425864083 / 1000 * self.temperature  # (kcal * K) / (mol * K)
-        result = (
-            torch.mean(pl_es) - torch.mean(p_es) - torch.mean(l_es) / -RT
-        )
-        print(f"{result = }")
+        # result = -torch.log((pl_e_avg - p_e_avg - l_e_avg) / -RT)
+        # result = -torch.log(pl_e_avg - p_e_avg - l_e_avg)
+        # result = torch.log(-(pl_e_avg - p_e_avg - l_e_avg))
+        result = (pl_e_avg - p_e_avg - l_e_avg)
         return result
+
 
 from torch.distributed.elastic.multiprocessing.errors import record
 import os
+
 
 class AffiNETy:
     def __init__(
         self,
         dataset=None,
         model=AffiNETy_graphSage,
-        pl_model=GraphSAGE(in_channels=-1, hidden_channels=5, num_layers=3, out_channels=1, jk="lstm"),
-        p_model= GraphSAGE(in_channels=-1, hidden_channels=5, num_layers=3, out_channels=1, jk="lstm"),
-        l_model=ViSNet(),
+        pl_model=GraphSAGE(
+            in_channels=-1, hidden_channels=5, num_layers=3, out_channels=1, jk="lstm"
+        ),
+        p_model=GraphSAGE(
+            in_channels=-1, hidden_channels=5, num_layers=3, out_channels=1, jk="lstm"
+        ),
+        # l_model=ViSNet(),
+        l_model=GraphSAGE(
+            in_channels=-1, hidden_channels=5, num_layers=3, out_channels=1, jk="lstm"
+        ),
         lr=1e-4,
         use_GPU=False,
         num_workers=1,
@@ -215,14 +277,16 @@ class AffiNETy:
         return
 
     @record
-    def train(
-        self, epochs=100, batch_size=2, lr=0.01, split_percent=0.8, verbose=True
-    ):
+    def train(self, epochs=100, batch_size=2, lr=0.01, split_percent=0.8, verbose=True):
         if self.dataset is None and dataset is not None:
             self.dataset = dataset
         if self.dataset is None:
             raise ValueError("No dataset provided!")
         optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
+        # print(self.model.parameters())
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                print(name, param.data)
         criterion = nn.MSELoss()
         train_dataset = self.dataset[: int(len(self.dataset) * split_percent)]
         test_dataset = self.dataset[int(len(self.dataset) * split_percent) :]
@@ -240,8 +304,9 @@ class AffiNETy:
             print("running on the GPU")
             # self.model = self.model.to(device)
             self.model = self.model.cuda()
-            dist.init_process_group(backend='nccl')
-            self.model = nn.parallel.DistributedDataParallel(self.model)
+            self.model = self.model.to(device)
+            # dist.init_process_group(backend='nccl')
+            # self.model = nn.parallel.DistributedDataParallel(self.model)
         else:
             gpu_enabled = False
             device = torch.device("cpu")
@@ -256,8 +321,8 @@ class AffiNETy:
             print("running on the CPU")
         print("Starting training...")
         for epoch in range(epochs):
-            train_loss = 0.
-            eval_loss = 0.
+            train_loss = 0.0
+            eval_loss = 0.0
             for batch in train_loader:
                 preds, true = [], []
                 optimizer.zero_grad()
@@ -265,12 +330,14 @@ class AffiNETy:
                     out = self.model(data, device)
                     preds.append(out.item())
                     true.append(data.y[0])
+                    # print(f"pred {out.item()}, true {data.y[0]}")
                 preds = torch.tensor(preds, requires_grad=True)
                 true = torch.tensor(true, requires_grad=True)
                 loss = criterion(preds, true)
                 loss.backward()
                 optimizer.step()
                 train_loss += loss.item()
+            train_loss /= len(train_loader)
             with torch.no_grad():
                 for batch in test_loader:
                     preds, true = [], []
@@ -278,12 +345,16 @@ class AffiNETy:
                         self.model.eval()
                         out = self.model(data, device)
                         preds.append(out.item())
-                        true.append(data.y[0].to(device))
+                        true.append(data.y[0])
+                    preds = torch.tensor(preds, requires_grad=True)
+                    true = torch.tensor(true, requires_grad=True)
                     loss = criterion(preds, true)
                     eval_loss += loss.item()
-                    if loss < lowest_test_error:
-                        torch.save(model, "models/AffiNETy")
-                    if verbose:
-                        print(f"Epoch {epoch+1}/{epochs}, Loss: {test_loss.item()}")
-            print(f"Epoch {epoch+1}/{epochs}")
+            eval_loss /= len(test_loader)
+            print(f"Epoch {epoch+1}/{epochs}, Train: {train_loss}, Loss: {eval_loss}")
+            if eval_loss < lowest_test_error:
+                torch.save(self.model, "models/AffiNETy")
+            # for name, param in self.model.named_parameters():
+            #     if param.requires_grad:
+            #         print(name, param.data)
         return
