@@ -69,6 +69,23 @@ def ase_to_ViSNet_data(
     edge_attr = torch.tensor(distances, dtype=torch.float).view(-1, 1)
     return x, edge_index, edge_attr, z, pos
 
+def ase_to_ViSNet_data_graphSage(
+    ase_mol,
+    cutoff=8.0,  # electrostatics should be nearly 0 by 8 angstroms
+    node_dim=100,
+):
+    z = torch.tensor(ase_mol.get_atomic_numbers(), dtype=torch.int)
+    pos = torch.tensor(ase_mol.get_positions(), dtype=torch.float)
+    source, target, distances = neighborlist.neighbor_list(
+        "ijd", ase_mol, cutoff=cutoff, self_interaction=False
+    )
+    x = F.one_hot(
+        torch.tensor(ase_mol.get_atomic_numbers()) - 1, num_classes=node_dim
+    ).float()
+    edge_index = torch.tensor(np.array([source, target]), dtype=torch.float)
+    edge_attr = torch.tensor(distances, dtype=torch.float).view(-1, 1)
+    return x, edge_index, edge_attr
+
 
 def chunks(iterable, size):
     """Yield successive n-sized chunks from iterable."""
@@ -82,7 +99,6 @@ class AffiNETy_PL_P_L_dataset(Dataset):
         root,
         transform=None,
         pre_transform=None,
-        r_cut=5.0,
         dataset="casf2016",
         NUM_THREADS=1,
         pl_dir="/storage/ice1/7/3/awallace43/casf2016/pl",
@@ -298,14 +314,12 @@ class AffiNETy_PL_P_L_dataset(Dataset):
         data = torch.load(osp.join(self.processed_dir, f"{self.dataset}_{idx}.pt"))
         return data
 
-
 class AffiNETy_dataset(Dataset):
     def __init__(
         self,
         root,
         transform=None,
         pre_transform=None,
-        r_cut=5.0,
         dataset="casf2016",
         NUM_THREADS=1,
         pl_dir="/storage/ice1/7/3/awallace43/casf2016/pl",
@@ -314,7 +328,8 @@ class AffiNETy_dataset(Dataset):
         power_ranking_file = "/storage/ice1/7/3/awallace43/CASF-2016/power_ranking/CoreSet.dat",
 
         chunk_size=None,
-        num_confs=None,
+        num_confs_protein=None,
+        num_confs_ligand=None,
         ensure_processed=True,
     ):
 
@@ -322,10 +337,14 @@ class AffiNETy_dataset(Dataset):
         self.df_lig = pd.read_pickle(l_pkl)
         self.pdb_ids = self.df_lig["pdb_id"].to_list()
         self.num_systems = len(self.pdb_ids)
-        if num_confs:
-            self.num_confs = range(num_confs)
+        if num_confs_protein:
+            self.num_confs_protein = range(num_confs_protein)
         else:
-            self.num_confs = range(self.df_lig.iloc[0]["num_conformers"])
+            self.num_confs_protein = range(self.df_lig.iloc[0]["num_conformers"])
+        if num_confs_ligand:
+            self.num_confs_ligand = range(num_confs_ligand)
+        else:
+            self.num_confs_ligand = range(self.df_lig.iloc[0]["num_conformers"])
         self.NUM_THREADS = NUM_THREADS
         print(f"Setting {NUM_THREADS = }")
         self.pl_dir=pl_dir
@@ -344,7 +363,7 @@ class AffiNETy_dataset(Dataset):
     @property
     def raw_file_names(self):
         return [
-            f"{self.dataset}.pkl",
+            # f"{self.dataset}.pkl",
         ]
 
     @property
@@ -353,7 +372,7 @@ class AffiNETy_dataset(Dataset):
             return [f"{self.dataset}_{i}.pt" for i in self.pdb_ids]
         else:
             vals = [os.path.basename(i) for i in glob(f"{self.processed_dir}/*")]
-            print(vals)
+            print(f"Only using subset: {len(vals)} / {len(self.pdb_ids)}")
             return vals
 
     def download(self):
@@ -362,23 +381,33 @@ class AffiNETy_dataset(Dataset):
         pass
 
     def process_single_pdb(self, datapoint):
+        if not self.ensure_processed:
+            return
         n, i, lig_confs = datapoint
-        # try:
         pls = {
+            "x": [],
+            "edge_index": [],
+            "edge_attr": [],
+        }
+        ps = {
+            "x": [],
+            "edge_index": [],
+            "edge_attr": [],
+        }
+        ls = {
             "x": [],
             "edge_index": [],
             "edge_attr": [],
             "z": [],
             "pos": [],
         }
-        ps = pls.copy()
-        ls = pls.copy()
-        print(f"pdb_id: {i} : {n}")
-        if os.path.exists(osp.join(self.processed_dir, f"{self.dataset}_{i}.pt")):
+        print(f"pdb_id : {i} : {n}")
+        pre_processed_path = f"{self.processed_dir}/../pre_processed/{self.dataset}_{i}.pt"
+        if os.path.exists(pre_processed_path):
             print("    already processed")
             return
         failed = False
-        for j in self.num_confs:
+        for j in self.num_confs_protein:
             # PL
             if (
                 not os.path.exists(f"{self.pl_dir}/{i}/prot_{j}.pdb")
@@ -386,72 +415,71 @@ class AffiNETy_dataset(Dataset):
                 or not os.path.exists(f"{self.p_dir}/{i}/prot_{j}.pdb")
                 or not os.path.exists(f"{self.p_dir}/{i}/prot_{j}.pdb")
             ):
+                print(f"Failed: cannot find files...", f"  {self.pl_dir}/{i}/prot_{j}.pdb",f"  {self.pl_dir}/{i}/lig_{j}.sdf", sep='\n')
                 return
             try:
                 pl_pro = read(f"{self.pl_dir}/{i}/prot_{j}.pdb")
                 pl_lig = read(f"{self.pl_dir}/{i}/lig_{j}.sdf")
                 pl = pl_pro + pl_lig
-                x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(pl)
+                x, edge_index, edge_attr = ase_to_ViSNet_data_graphSage(pl)
                 pls["x"].append(x)
                 pls["edge_index"].append(edge_index)
                 pls["edge_attr"].append(edge_attr)
-                pls["z"].append(z)
-                pls["pos"].append(pos)
                 # P
                 p = read(f"{self.p_dir}/{i}/prot_{j}.pdb")
-                x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(p)
+                x, edge_index, edge_attr = ase_to_ViSNet_data_graphSage(p)
                 ps["x"].append(x)
                 ps["edge_index"].append(edge_index)
                 ps["edge_attr"].append(edge_attr)
-                ps["z"].append(z)
-                ps["pos"].append(pos)
-                # L
-                l = rdkit_mol_to_ase_atoms(lig_confs[j])
-                x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(l)
+            except Exception as e:
+                print(e)
+                print("Failed on PL conversion(s)")
+                failed = True
+                break
+        # L
+        print(f"  {len(lig_confs) = }")
+        for j in lig_confs:
+            try:
+                l = rdkit_mol_to_ase_atoms(j)
+                x, edge_index, edge_attr = ase_to_ViSNet_data_graphSage(l)
+                z = torch.tensor(l.get_atomic_numbers(), dtype=torch.int64) # Required for ViSNet
+                pos = torch.tensor(l.get_positions(), dtype=torch.float, requires_grad=True) # Required for ViSNet
+                ls["z"].append(z)
+                ls["pos"].append(pos)
                 ls["x"].append(x)
                 ls["edge_index"].append(edge_index)
                 ls["edge_attr"].append(edge_attr)
-                ls["z"].append(z)
-                ls["pos"].append(pos)
             except Exception as e:
                 print(e)
-                print("Failed on conversion(s)")
+                print("Failed on L conversion(s)")
                 failed = True
                 break
-        if len(pls["x"]) == 0 or len(ps["x"]) == 0 or len(ls["x"]) == 0 or failed:
-            print("Failed to update:", len(pls['x']), len(ps['x']), len(ls['x']), failed)
+        if len(pls["x"]) == 0 or len(ps["x"]) == 0 or len(ls["z"]) == 0 or failed:
+            print("Failed to update:", len(pls['x']), len(ps['x']), len(ls['z']), failed)
             return
         _d = Data(
             # pl
             pl_x=pls["x"],
             pl_edge_index=pls["edge_index"],
             pl_edge_attr=pls["edge_attr"],
-            pl_z=pls["z"],
-            pl_pos=pls["pos"],
             # p
             p_x=ps["x"],
             p_edge_index=ps["edge_index"],
             p_edge_attr=ps["edge_attr"],
-            p_z=ps["z"],
-            p_pos=ps["pos"],
             # l
             l_x=ls["x"],
             l_edge_index=ls["edge_index"],
             l_edge_attr=ls["edge_attr"],
             l_z=ls["z"],
             l_pos=ls["pos"],
+            y=self.power_ranking_dict[i],
+            pl_batch=torch.tensor([0 for _ in range(len(pls['x'][0]))], dtype=torch.int64),
+            p_batch=torch.tensor([0 for _ in range(len(ps['x'][0]))], dtype=torch.int64),
+            l_batch=torch.tensor([0 for _ in range(len(ls['x'][0]))], dtype=torch.int64),
         )
         print(_d)
-        # if pre_filter is not None and not pre_filter(data):
-        #     return
-
-        # if pre_transform is not None:
-        #     _d = pre_transform(_d)
-        d_path = osp.join(self.processed_dir, f"{self.dataset}_{i}.pt")
-        print(f"  {d_path = }")
-        torch.save(_d, d_path)
-        # except Exception:
-        #     print(f"{i} failed...")
+        print(f"  {pre_processed_path = }")
+        torch.save(_d, pre_processed_path)
         return
 
     def generate_data(self):
@@ -472,14 +500,8 @@ class AffiNETy_dataset(Dataset):
 
     def process(self):
         print(f"Creating {self.dataset}...")
-        # data = [
-        #     (
-        #         n,
-        #         i,
-        #         self.df_lig[self.df_lig["pdb_id"] == i]["conformers"].to_list()[0],
-        #     )
-        #     for n, i in enumerate(self.pdb_ids)
-        # ]
+        if not os.path.exists(f"{self.processed_dir}/../pre_processed"):
+            os.mkdir(f"{self.processed_dir}/../pre_processed")
         if self.NUM_THREADS > 1:
             with Pool(processes=self.NUM_THREADS) as pool:
                 for data_chunk in self.chunks(self.generate_data(), self.chunk_size):
@@ -489,6 +511,15 @@ class AffiNETy_dataset(Dataset):
         else:
             for d in self.generate_data():
                 self.process_single_pdb(d)
+
+        # Need to convert all available files to f"{self.dataset}_{idx}.pt" format
+        pre_processed_files = glob(f"{self.processed_dir}/../pre_processed/*")
+        # print(pre_processed_files)
+        print("Copying files...")
+        for n, i in enumerate(pre_processed_files):
+            cmd = f"mv {i} {self.processed_dir}/{self.dataset}_{n}.pt"
+            # print(cmd)
+            os.system(cmd)
         return
 
     def len(self):
@@ -497,7 +528,6 @@ class AffiNETy_dataset(Dataset):
     def get(self, idx):
         data = torch.load(osp.join(self.processed_dir, f"{self.dataset}_{idx}.pt"))
         return data
-
 
 def main():
     import argparse

@@ -50,7 +50,7 @@ def main():
         num_confs_protein=2,
         ensure_processed=False,
     )
-    m = AffiNETy(dataset=ds, model=AffiNETy_PL_P_L)
+    m = AffiNETy(dataset=ds, model=AffiNETy_PL_P_L, num_workers=NUM_THREADS)
     m.train()
     return
 

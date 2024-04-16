@@ -81,22 +81,24 @@ def cleanup_input_labels():
 
 def main():
     cleanup_input_labels()
-    # AffiNETy_dataset(
-    #     root=f"data_{v}",
-    #     dataset=v,
-    #     NUM_THREADS=NUM_THREADS,
-    #     pl_dir=pl_dir,
-    #     p_dir=p_dir,
-    #     l_pkl=l_pkl,
-    #     power_ranking_file=power_ranking_file_pkl,
-    #     num_confs=8,
-    # )
-
+    AffiNETy_dataset(
+        root=f"data_{v}",
+        dataset=v,
+        NUM_THREADS=NUM_THREADS,
+        pl_dir=pl_dir,
+        p_dir=p_dir,
+        l_pkl=l_pkl,
+        power_ranking_file=power_ranking_file_pkl,
+        num_confs_protein=2,
+        ensure_processed=True,
+    )
+    return
     AffiNETy_PL_P_L_dataset(
         root=f"data_PL_P_L_{v}",
         dataset=v,
         NUM_THREADS=NUM_THREADS,
         pl_dir=pl_dir,
+        p_dir=p_dir,
         l_pkl=l_pkl,
         power_ranking_file=power_ranking_file_pkl,
         num_confs_protein=2,

@@ -38,7 +38,7 @@ class AffiNETy_PL_P_L(nn.Module):
         self.visnet_l = visnet_l
         self.temperature = temperature
 
-    def forward(self, data, device):
+    def forward(self, data):
         """
         Forward pass through the model.
 
@@ -64,28 +64,28 @@ class AffiNETy_PL_P_L(nn.Module):
             )
         """
         print(data)
-        pl_es = torch.zeros(len(data.pl_z), dtype=torch.float, device=device)
-        p_es = torch.zeros(len(data.p_z), dtype=torch.float, device=device  )
-        l_es = torch.zeros(len(data.l_z), dtype=torch.float, device=device  )
+        pl_es = torch.zeros(len(data.pl_z), dtype=torch.float)
+        p_es = torch.zeros(len(data.p_z), dtype=torch.float)
+        l_es = torch.zeros(len(data.l_z), dtype=torch.float)
         for i in range(len(data.l_z)):
-            batch = torch.zeros(len(data.l_z[i]), dtype=torch.int64, device=device)
+            batch = torch.zeros(len(data.l_z[i]), dtype=torch.int64, )
             l_es[i] = self.visnet_l(
-                z=data.l_z[i].to(device),
-                pos=data.l_pos[i].to(device),
+                z=data.l_z[i],
+                pos=data.l_pos[i],
                 batch=batch,
             )[0]
         for i in range(len(data.pl_z)):
-            batch = torch.zeros(len(data.pl_z[i]), dtype=torch.int64, device=device)
+            batch = torch.zeros(len(data.pl_z[i]), dtype=torch.int64, )
             pl_es[i] = self.visnet_pl(
-                z=data.pl_z[i].to(device),
-                pos=data.pl_pos[i].to(device),
+                z=data.pl_z[i],
+                pos=data.pl_pos[i],
                 batch=batch,
             )[0]
         for i in range(len(data.p_z)):
-            batch = torch.zeros(len(data.p_z[i]), dtype=torch.int64, device=device)
+            batch = torch.zeros(len(data.p_z[i]), dtype=torch.int64, )
             p_es[i] = self.visnet_p(
-                z=data.p_z[i].to(device),
-                pos=data.p_pos[i].to(device),
+                z=data.p_z[i],
+                pos=data.p_pos[i],
                 batch=batch,
             )[0]
 
@@ -167,17 +167,15 @@ class AffiNETy:
         visnet_l=ViSNet(),
         lr=1e-4,
         use_GPU=False,
-        num_workers=1,
     ):
         self.model = model(visnet_pl, visnet_p, visnet_l)
         self.dataset = dataset
         self.use_GPU = use_GPU
-        self.num_workers = num_workers
         return
 
     @record
     def train(
-        self, epochs=100, batch_size=2, lr=0.01, split_percent=0.8, verbose=True
+        self, epochs=100, batch_size=4, lr=0.01, split_percent=0.8, verbose=True
     ):
         if self.dataset is None and dataset is not None:
             self.dataset = dataset
@@ -195,26 +193,16 @@ class AffiNETy:
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
         lowest_test_error = 1000000
 
-        if torch.cuda.is_available() and self.use_GPU:
-            gpu_enabled = True
-            device = torch.device("cuda:0")
-            print("running on the GPU")
-            # self.model = self.model.to(device)
-            self.model = self.model.cuda()
-            dist.init_process_group(backend='nccl')
-            self.model = nn.parallel.DistributedDataParallel(self.model)
-        else:
-            gpu_enabled = False
-            device = torch.device("cpu")
-            # dist.init_process_group(backend='gloo')
-            # self.model = nn.parallel.DistributedDataParallel(self.model)
-            # local_rank = int(os.environ["LOCAL_RANK"])
-            # self.model = torch.nn.parallel.DistributedDataParallel(
-            #     self.model,
-            #     device_ids=[local_rank],
-            #     output_device=local_rank,
-            # )
-            print("running on the CPU")
+        gpu_enabled = False
+        dist.init_process_group(backend='gloo')
+        self.model = nn.parallel.DistributedDataParallel(self.model)
+        local_rank = int(os.environ["LOCAL_RANK"])
+        self.model = torch.nn.parallel.DistributedDataParallel(
+            self.model,
+            device_ids=[local_rank],
+            output_device=local_rank,
+        )
+        print("running on the CPU")
         print("Starting training...")
         for epoch in range(epochs):
             train_loss = 0.
@@ -223,7 +211,7 @@ class AffiNETy:
                 preds, true = [], []
                 optimizer.zero_grad()
                 for data in batch.to_data_list():
-                    out = self.model(data, device)
+                    out = self.model(data)
                     preds.append(out.item())
                     true.append(data.y[0])
                 preds = torch.tensor(preds, requires_grad=True)
@@ -237,9 +225,9 @@ class AffiNETy:
                     preds, true = [], []
                     for data in batch.to_data_list():
                         self.model.eval()
-                        out = self.model(data, device)
+                        out = self.model(data)
                         preds.append(out.item())
-                        true.append(data.y[0].to(device))
+                        true.append(data.y[0])
                     loss = criterion(preds, true)
                     eval_loss += loss.item()
                     if loss < lowest_test_error:
