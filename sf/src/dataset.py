@@ -181,8 +181,8 @@ class AffiNETy_PL_P_L_dataset(Dataset):
                 pl_pro = read(f"{self.pl_dir}/{i}/prot_{j}.pdb")
                 pl_lig = read(f"{self.pl_dir}/{i}/lig_{j}.sdf")
                 pl = pl_pro + pl_lig
-                z = torch.tensor(pl.get_atomic_numbers(), dtype=torch.int)
-                pos = torch.tensor(pl.get_positions(), dtype=torch.float)
+                z = torch.tensor(pl.get_atomic_numbers(), dtype=torch.int64) # Required for ViSNet
+                pos = torch.tensor(pl.get_positions(), dtype=torch.float, requires_grad=True) # Required for ViSNet
                 # x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(pl)
                 pls["z"].append(z)
                 pls["pos"].append(pos)
@@ -200,9 +200,8 @@ class AffiNETy_PL_P_L_dataset(Dataset):
                 return
             try:
                 p = read(f"{self.p_dir}/{i}/prot_{j}.pdb")
-                z = torch.tensor(p.get_atomic_numbers(), dtype=torch.int)
-                pos = torch.tensor(p.get_positions(), dtype=torch.float)
-                # x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(pl)
+                z = torch.tensor(p.get_atomic_numbers(), dtype=torch.int64) # Required for ViSNet
+                pos = torch.tensor(p.get_positions(), dtype=torch.float, requires_grad=True) # Required for ViSNet
                 ps["z"].append(z)
                 ps["pos"].append(pos)
             except Exception as e:
@@ -215,8 +214,8 @@ class AffiNETy_PL_P_L_dataset(Dataset):
         for j in lig_confs:
             try:
                 l = rdkit_mol_to_ase_atoms(j)
-                z = torch.tensor(l.get_atomic_numbers(), dtype=torch.int)
-                pos = torch.tensor(l.get_positions(), dtype=torch.float)
+                z = torch.tensor(l.get_atomic_numbers(), dtype=torch.int64) # Required for ViSNet
+                pos = torch.tensor(l.get_positions(), dtype=torch.float, requires_grad=True) # Required for ViSNet
                 ls["z"].append(z)
                 ls["pos"].append(pos)
             except Exception as e:
@@ -244,7 +243,8 @@ class AffiNETy_PL_P_L_dataset(Dataset):
             # l_edge_attr=ls["edge_attr"],
             l_z=ls["z"],
             l_pos=ls["pos"],
-            y=self.power_ranking_dict[i]
+            y=self.power_ranking_dict[i],
+            batch=torch.tensor([0 for _ in range(len(pls['z'][0]))], dtype=torch.int64),
         )
         print(_d)
         print(f"  {pre_processed_path = }")
@@ -269,6 +269,8 @@ class AffiNETy_PL_P_L_dataset(Dataset):
 
     def process(self):
         print(f"Creating {self.dataset}...")
+        if not os.path.exists(f"{self.processed_dir}/../pre_processed"):
+            os.mkdir(f"{self.processed_dir}/../pre_processed")
         if self.NUM_THREADS > 1:
             with Pool(processes=self.NUM_THREADS) as pool:
                 for data_chunk in self.chunks(self.generate_data(), self.chunk_size):
@@ -282,8 +284,9 @@ class AffiNETy_PL_P_L_dataset(Dataset):
         # Need to convert all available files to f"{self.dataset}_{idx}.pt" format
         pre_processed_files = glob(f"{self.processed_dir}/../pre_processed/*")
         # print(pre_processed_files)
+        print("Copying files...")
         for n, i in enumerate(pre_processed_files):
-            cmd = f"cp {i} {self.processed_dir}/{self.dataset}_{n}.pt"
+            cmd = f"mv {i} {self.processed_dir}/{self.dataset}_{n}.pt"
             # print(cmd)
             os.system(cmd)
         return

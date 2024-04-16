@@ -1,5 +1,5 @@
 from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset
-from src.models import AffiNETy, AffiNETy_PL_L
+from src.models import AffiNETy, AffiNETy_PL_P_L
 import os
 import argparse
 
@@ -35,13 +35,13 @@ else:
 
 
 def main():
-    import torch
-    v = torch.load("./data_PL_L_casf/processed/casf_0.pt")
-    print(v)
-    print(v.pl_z)
-    return
+    # import torch
+    # v = torch.load("./data_PL_L_casf/processed/casf_0.pt")
+    # print(v)
+    # print(v.pl_z)
+    # return
     ds = AffiNETy_PL_P_L_dataset(
-        root=f"data_PL_L_{v}",
+        root=f"data_PL_P_L_{v}",
         dataset=v,
         NUM_THREADS=NUM_THREADS,
         pl_dir=pl_dir,
@@ -50,7 +50,7 @@ def main():
         num_confs_protein=2,
         ensure_processed=False,
     )
-    m = AffiNETy(dataset=ds, model=AffiNETy_PL_L)
+    m = AffiNETy(dataset=ds, model=AffiNETy_PL_P_L)
     m.train()
     return
 

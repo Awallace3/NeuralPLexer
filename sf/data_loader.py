@@ -93,7 +93,7 @@ def main():
     # )
 
     AffiNETy_PL_P_L_dataset(
-        root=f"data_PL_L_{v}",
+        root=f"data_PL_P_L_{v}",
         dataset=v,
         NUM_THREADS=NUM_THREADS,
         pl_dir=pl_dir,
