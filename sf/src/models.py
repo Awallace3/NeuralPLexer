@@ -278,12 +278,12 @@ class AffiNETy:
         return
 
     @record
-    def train(self, epochs=100, batch_size=2, lr=self.lr, split_percent=0.8, verbose=True):
+    def train(self, epochs=100, batch_size=2, split_percent=0.8, verbose=True):
         if self.dataset is None and dataset is not None:
             self.dataset = dataset
         if self.dataset is None:
             raise ValueError("No dataset provided!")
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         # print(self.model.parameters())
         for name, param in self.model.named_parameters():
             if param.requires_grad:
