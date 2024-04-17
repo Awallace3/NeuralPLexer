@@ -12,6 +12,7 @@ import torch.distributed as dist
 class AffiNETy_PL_P_L(nn.Module):
     def __init__(
         self,
+        # could try to reduce cutoff to 3.0, hidden channels 128->64,
         visnet_pl=ViSNet(),
         visnet_p=ViSNet(),
         visnet_l=ViSNet(),
@@ -277,7 +278,7 @@ class AffiNETy:
         return
 
     @record
-    def train(self, epochs=100, batch_size=2, lr=0.01, split_percent=0.8, verbose=True):
+    def train(self, epochs=100, batch_size=2, lr=self.lr, split_percent=0.8, verbose=True):
         if self.dataset is None and dataset is not None:
             self.dataset = dataset
         if self.dataset is None:
@@ -323,6 +324,7 @@ class AffiNETy:
         for epoch in range(epochs):
             train_loss = 0.0
             eval_loss = 0.0
+            self.model.train()
             for batch in train_loader:
                 preds, true = [], []
                 optimizer.zero_grad()
@@ -338,11 +340,11 @@ class AffiNETy:
                 optimizer.step()
                 train_loss += loss.item()
             train_loss /= len(train_loader)
+            self.model.eval()
             with torch.no_grad():
                 for batch in test_loader:
                     preds, true = [], []
                     for data in batch.to_data_list():
-                        self.model.eval()
                         out = self.model(data, device)
                         preds.append(out.item())
                         true.append(data.y[0])

@@ -1,9 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=AF-Training
-##SBATCH -N1 -n20 #number of nodes and cores required per job
+#SBATCH -N1 -n12 #number of nodes and cores required per job
 #SBATCH --mem-per-cpu=10G #memory per core
 #SBATCH --time=16:00:00
-#SBATCH -pice-cpu
+#SBATCH -pice-gpu
+#SBATCH -G1
 #SBATCH --output=outs/af_training.out
 
 cd $SLURM_SUBMIT_DIR

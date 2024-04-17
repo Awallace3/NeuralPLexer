@@ -8,8 +8,11 @@ from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset
 
 print("imports done!\n")
 
-NUM_THREADS = int(os.getenv("OMP_NUM_THREADS"))
-# NUM_THREADS = 1
+NUM_THREADS = os.getenv("OMP_NUM_THREADS")
+if NUM_THREADS != "":
+    NUM_THREADS = 1
+else:
+    NUM_THREADS = int(NUM_THREADS)
 parser = argparse.ArgumentParser(description="Process the PDBBIND setting")
 parser.add_argument(
     "--pdbbind",
