@@ -24,6 +24,7 @@ from torch_geometric.data import Dataset
 from rdkit.Chem import AllChem
 from rdkit import Chem
 
+
 def rdkit_mol_to_ase_atoms(rdkit_mol):
     """
     Convert an RDKit Mol object to an ASE Atoms object.
@@ -69,10 +70,11 @@ def ase_to_ViSNet_data(
     edge_attr = torch.tensor(distances, dtype=torch.float).view(-1, 1)
     return x, edge_index, edge_attr, z, pos
 
+
 def ase_to_ViSNet_data_graphSage(
     ase_mol,
-    cutoff=8.0,  # electrostatics should be nearly 0 by 8 angstroms
-    node_dim=100,
+    cutoff=4.0,  # electrostatics should be nearly 0 by 8 angstroms
+    node_dim=50,
 ):
     z = torch.tensor(ase_mol.get_atomic_numbers(), dtype=torch.int)
     pos = torch.tensor(ase_mol.get_positions(), dtype=torch.float)
@@ -91,7 +93,8 @@ def chunks(iterable, size):
     """Yield successive n-sized chunks from iterable."""
     iterator = iter(iterable)
     for first in iterator:  # take first item from iterator
-        yield list(islice(iterator, size-1, None))  # then take size - 1 more
+        yield list(islice(iterator, size - 1, None))  # then take size - 1 more
+
 
 class AffiNETy_PL_P_L_dataset(Dataset):
     def __init__(
@@ -104,8 +107,7 @@ class AffiNETy_PL_P_L_dataset(Dataset):
         pl_dir="/storage/ice1/7/3/awallace43/casf2016/pl",
         p_dir="/storage/ice1/7/3/awallace43/casf2016/p",
         l_pkl="/storage/ice1/7/3/awallace43/casf2016/l/casf_final.pkl",
-        power_ranking_file = "/storage/ice1/7/3/awallace43/CASF-2016/power_ranking/CoreSet.dat",
-
+        power_ranking_file="/storage/ice1/7/3/awallace43/CASF-2016/power_ranking/CoreSet.dat",
         chunk_size=None,
         num_confs_protein=None,
         num_confs_ligand=None,
@@ -126,16 +128,16 @@ class AffiNETy_PL_P_L_dataset(Dataset):
             self.num_confs_ligand = range(self.df_lig.iloc[0]["num_conformers"])
         self.NUM_THREADS = NUM_THREADS
         print(f"Setting {NUM_THREADS = }")
-        self.pl_dir=pl_dir
-        self.p_dir=p_dir
+        self.pl_dir = pl_dir
+        self.p_dir = p_dir
         self.power_ranking_file = power_ranking_file
-        self.ensure_processed=ensure_processed
+        self.ensure_processed = ensure_processed
         if chunk_size:
             self.chunk_size = chunk_size
         else:
             self.chunk_size = NUM_THREADS * 10
 
-        with open(power_ranking_file, 'rb') as handle:
+        with open(power_ranking_file, "rb") as handle:
             self.power_ranking_dict = pickle.load(handle)
         super(AffiNETy_PL_P_L_dataset, self).__init__(root, transform, pre_transform)
 
@@ -180,25 +182,35 @@ class AffiNETy_PL_P_L_dataset(Dataset):
             "pos": [],
         }
         print(f"pdb_id : {i} : {n}")
-        pre_processed_path = f"{self.processed_dir}/../pre_processed/{self.dataset}_{i}.pt"
+        pre_processed_path = (
+            f"{self.processed_dir}/../pre_processed/{self.dataset}_{i}.pt"
+        )
         if os.path.exists(pre_processed_path):
             print("    already processed")
             return
         failed = False
         for j in self.num_confs_protein:
             # PL
-            if (
-                not os.path.exists(f"{self.pl_dir}/{i}/prot_{j}.pdb")
-                or not os.path.exists(f"{self.pl_dir}/{i}/lig_{j}.sdf")
-            ):
-                print(f"Failed: cannot find files...", f"  {self.pl_dir}/{i}/prot_{j}.pdb",f"  {self.pl_dir}/{i}/lig_{j}.sdf", sep='\n')
+            if not os.path.exists(
+                f"{self.pl_dir}/{i}/prot_{j}.pdb"
+            ) or not os.path.exists(f"{self.pl_dir}/{i}/lig_{j}.sdf"):
+                print(
+                    f"Failed: cannot find files...",
+                    f"  {self.pl_dir}/{i}/prot_{j}.pdb",
+                    f"  {self.pl_dir}/{i}/lig_{j}.sdf",
+                    sep="\n",
+                )
                 return
             try:
                 pl_pro = read(f"{self.pl_dir}/{i}/prot_{j}.pdb")
                 pl_lig = read(f"{self.pl_dir}/{i}/lig_{j}.sdf")
                 pl = pl_pro + pl_lig
-                z = torch.tensor(pl.get_atomic_numbers(), dtype=torch.int64) # Required for ViSNet
-                pos = torch.tensor(pl.get_positions(), dtype=torch.float, requires_grad=True) # Required for ViSNet
+                z = torch.tensor(
+                    pl.get_atomic_numbers(), dtype=torch.int64
+                )  # Required for ViSNet
+                pos = torch.tensor(
+                    pl.get_positions(), dtype=torch.float, requires_grad=True
+                )  # Required for ViSNet
                 # x, edge_index, edge_attr, z, pos = ase_to_ViSNet_data(pl)
                 pls["z"].append(z)
                 pls["pos"].append(pos)
@@ -208,16 +220,24 @@ class AffiNETy_PL_P_L_dataset(Dataset):
                 failed = True
                 break
             # P
-            if (
-                not os.path.exists(f"{self.pl_dir}/{i}/prot_{j}.pdb")
-                or not os.path.exists(f"{self.pl_dir}/{i}/lig_{j}.sdf")
-            ):
-                print(f"Failed: cannot find files...", f"  {self.pl_dir}/{i}/prot_{j}.pdb",f"  {self.pl_dir}/{i}/lig_{j}.sdf", sep='\n')
+            if not os.path.exists(
+                f"{self.pl_dir}/{i}/prot_{j}.pdb"
+            ) or not os.path.exists(f"{self.pl_dir}/{i}/lig_{j}.sdf"):
+                print(
+                    f"Failed: cannot find files...",
+                    f"  {self.pl_dir}/{i}/prot_{j}.pdb",
+                    f"  {self.pl_dir}/{i}/lig_{j}.sdf",
+                    sep="\n",
+                )
                 return
             try:
                 p = read(f"{self.p_dir}/{i}/prot_{j}.pdb")
-                z = torch.tensor(p.get_atomic_numbers(), dtype=torch.int64) # Required for ViSNet
-                pos = torch.tensor(p.get_positions(), dtype=torch.float, requires_grad=True) # Required for ViSNet
+                z = torch.tensor(
+                    p.get_atomic_numbers(), dtype=torch.int64
+                )  # Required for ViSNet
+                pos = torch.tensor(
+                    p.get_positions(), dtype=torch.float, requires_grad=True
+                )  # Required for ViSNet
                 ps["z"].append(z)
                 ps["pos"].append(pos)
             except Exception as e:
@@ -230,8 +250,12 @@ class AffiNETy_PL_P_L_dataset(Dataset):
         for j in lig_confs:
             try:
                 l = rdkit_mol_to_ase_atoms(j)
-                z = torch.tensor(l.get_atomic_numbers(), dtype=torch.int64) # Required for ViSNet
-                pos = torch.tensor(l.get_positions(), dtype=torch.float, requires_grad=True) # Required for ViSNet
+                z = torch.tensor(
+                    l.get_atomic_numbers(), dtype=torch.int64
+                )  # Required for ViSNet
+                pos = torch.tensor(
+                    l.get_positions(), dtype=torch.float, requires_grad=True
+                )  # Required for ViSNet
                 ls["z"].append(z)
                 ls["pos"].append(pos)
             except Exception as e:
@@ -240,7 +264,9 @@ class AffiNETy_PL_P_L_dataset(Dataset):
                 failed = True
                 break
         if len(pls["z"]) == 0 or len(ls["z"]) == 0 or failed:
-            print("Failed to update:", len(pls['z']), len(ps['z']), len(ls['z']), failed)
+            print(
+                "Failed to update:", len(pls["z"]), len(ps["z"]), len(ls["z"]), failed
+            )
             return
         # pls = {k: torch.tensor(v) for k, v in pls.items()}
         # ls = {k: torch.tensor(v) for k, v in ls.items()}
@@ -260,7 +286,7 @@ class AffiNETy_PL_P_L_dataset(Dataset):
             l_z=ls["z"],
             l_pos=ls["pos"],
             y=self.power_ranking_dict[i],
-            batch=torch.tensor([0 for _ in range(len(pls['z'][0]))], dtype=torch.int64),
+            batch=torch.tensor([0 for _ in range(len(pls["z"][0]))], dtype=torch.int64),
         )
         print(_d)
         print(f"  {pre_processed_path = }")
@@ -269,7 +295,9 @@ class AffiNETy_PL_P_L_dataset(Dataset):
 
     def generate_data(self):
         for n, pdb_id in enumerate(self.pdb_ids):
-            conformers = self.df_lig[self.df_lig["pdb_id"] == pdb_id]["conformers"].to_list()[0]
+            conformers = self.df_lig[self.df_lig["pdb_id"] == pdb_id][
+                "conformers"
+            ].to_list()[0]
             yield (n, pdb_id, conformers)
 
     def chunks(self, data, chunk_size):
@@ -314,6 +342,137 @@ class AffiNETy_PL_P_L_dataset(Dataset):
         data = torch.load(osp.join(self.processed_dir, f"{self.dataset}_{idx}.pt"))
         return data
 
+
+def process_single_pdb_parallel(datapoint):
+    (
+        n,
+        i,
+        lig_confs,
+        processed_dir,
+        ensure_processed,
+        power_ranking_dict,
+        dataset,
+        num_confs_protein,
+        pl_dir,
+        p_dir,
+    ) = datapoint
+    if not ensure_processed:
+        return
+    print(f"pdb_id : {i} : {n}")
+    if i not in power_ranking_dict.keys() or not lig_confs:
+        print(f"{i} not in power_ranking_dict or lig_confs == None, skipping...")
+        return
+    pls = {
+        "x": [],
+        "edge_index": [],
+        "edge_attr": [],
+        "num_nodes": [],
+    }
+    ps = {
+        "x": [],
+        "edge_index": [],
+        "edge_attr": [],
+    }
+    ls = {
+        "x": [],
+        "edge_index": [],
+        "edge_attr": [],
+        "z": [],
+        "pos": [],
+    }
+    pre_processed_path = f"{processed_dir}/../pre_processed/{dataset}_{i}.pt"
+    if os.path.exists(pre_processed_path):
+        print("    already processed")
+        return
+    failed = False
+    for j in num_confs_protein:
+        # PL
+        if (
+            not os.path.exists(f"{pl_dir}/{i}/prot_{j}.pdb")
+            or not os.path.exists(f"{pl_dir}/{i}/lig_{j}.sdf")
+            or not os.path.exists(f"{p_dir}/{i}/prot_{j}.pdb")
+            or not os.path.exists(f"{p_dir}/{i}/prot_{j}.pdb")
+        ):
+            print(
+                f"Failed: cannot find files...",
+                f"  {pl_dir}/{i}/prot_{j}.pdb",
+                f"  {pl_dir}/{i}/lig_{j}.sdf",
+                sep="\n",
+            )
+            return
+        try:
+            pl_pro = read(f"{pl_dir}/{i}/prot_{j}.pdb")
+            pl_lig = read(f"{pl_dir}/{i}/lig_{j}.sdf")
+            pl = pl_pro + pl_lig
+            x, edge_index, edge_attr = ase_to_ViSNet_data_graphSage(pl)
+            pls["x"].append(x)
+            pls["edge_index"].append(edge_index)
+            pls["edge_attr"].append(edge_attr)
+            pls["num_nodes"] = len(pl.get_atomic_numbers())
+            # P
+            p = read(f"{p_dir}/{i}/prot_{j}.pdb")
+            x, edge_index, edge_attr = ase_to_ViSNet_data_graphSage(p)
+            ps["x"].append(x)
+            ps["edge_index"].append(edge_index)
+            ps["edge_attr"].append(edge_attr)
+        except Exception as e:
+            print(e)
+            print("Failed on PL conversion(s)")
+            failed = True
+            break
+    # L
+    print(f"  {len(lig_confs) = }")
+    for j in lig_confs:
+        try:
+            l = rdkit_mol_to_ase_atoms(j)
+            x, edge_index, edge_attr = ase_to_ViSNet_data_graphSage(l)
+            z = torch.tensor(
+                l.get_atomic_numbers(), dtype=torch.int64
+            )  # Required for ViSNet
+            pos = torch.tensor(
+                l.get_positions(), dtype=torch.float, requires_grad=True
+            )  # Required for ViSNet
+            ls["z"].append(z)
+            ls["pos"].append(pos)
+            ls["x"].append(x)
+            ls["edge_index"].append(edge_index)
+            ls["edge_attr"].append(edge_attr)
+        except Exception as e:
+            print(e)
+            print("Failed on L conversion(s)")
+            failed = True
+            break
+    if len(pls["x"]) == 0 or len(ps["x"]) == 0 or len(ls["z"]) == 0 or failed:
+        print("Failed to update:", len(pls["x"]), len(ps["x"]), len(ls["z"]), failed)
+        return
+
+    _d = Data(
+        # pl
+        num_nodes=pls["num_nodes"],
+        pl_x=pls["x"],
+        pl_edge_index=pls["edge_index"],
+        pl_edge_attr=pls["edge_attr"],
+        # p
+        p_x=ps["x"],
+        p_edge_index=ps["edge_index"],
+        p_edge_attr=ps["edge_attr"],
+        # l
+        l_x=ls["x"],
+        l_edge_index=ls["edge_index"],
+        l_edge_attr=ls["edge_attr"],
+        l_z=ls["z"],
+        l_pos=ls["pos"],
+        y=power_ranking_dict[i],
+        pl_batch=torch.tensor([0 for _ in range(len(pls["x"][0]))], dtype=torch.int64),
+        p_batch=torch.tensor([0 for _ in range(len(ps["x"][0]))], dtype=torch.int64),
+        l_batch=torch.tensor([0 for _ in range(len(ls["x"][0]))], dtype=torch.int64),
+    )
+    print(_d)
+    print(f"  {pre_processed_path = }")
+    torch.save(_d, pre_processed_path)
+    return
+
+
 class AffiNETy_dataset(Dataset):
     def __init__(
         self,
@@ -325,8 +484,7 @@ class AffiNETy_dataset(Dataset):
         pl_dir="/storage/ice1/7/3/awallace43/casf2016/pl",
         p_dir="/storage/ice1/7/3/awallace43/casf2016/p",
         l_pkl="/storage/ice1/7/3/awallace43/casf2016/l/casf_final.pkl",
-        power_ranking_file = "/storage/ice1/7/3/awallace43/CASF-2016/power_ranking/CoreSet.dat",
-
+        power_ranking_file="/storage/ice1/7/3/awallace43/CASF-2016/power_ranking/CoreSet.dat",
         chunk_size=None,
         num_confs_protein=None,
         num_confs_ligand=None,
@@ -347,16 +505,16 @@ class AffiNETy_dataset(Dataset):
             self.num_confs_ligand = range(self.df_lig.iloc[0]["num_conformers"])
         self.NUM_THREADS = NUM_THREADS
         print(f"Setting {NUM_THREADS = }")
-        self.pl_dir=pl_dir
-        self.p_dir=p_dir
+        self.pl_dir = pl_dir
+        self.p_dir = p_dir
         self.power_ranking_file = power_ranking_file
-        self.ensure_processed=ensure_processed
+        self.ensure_processed = ensure_processed
         if chunk_size:
             self.chunk_size = chunk_size
         else:
-            self.chunk_size = NUM_THREADS * 10
+            self.chunk_size = NUM_THREADS * 100
 
-        with open(power_ranking_file, 'rb') as handle:
+        with open(power_ranking_file, "rb") as handle:
             self.power_ranking_dict = pickle.load(handle)
         super(AffiNETy_dataset, self).__init__(root, transform, pre_transform)
 
@@ -371,7 +529,10 @@ class AffiNETy_dataset(Dataset):
         if self.ensure_processed:
             return [f"{self.dataset}_{i}.pt" for i in self.pdb_ids]
         else:
-            vals = [os.path.basename(i) for i in glob(f"{self.processed_dir}/{self.dataset}*")]
+            vals = [
+                os.path.basename(i)
+                for i in glob(f"{self.processed_dir}/{self.dataset}*")
+            ]
             # print(f"Only using subset: {len(vals)} / {len(self.pdb_ids)}")
             # print(vals)
             return vals
@@ -393,7 +554,7 @@ class AffiNETy_dataset(Dataset):
             "x": [],
             "edge_index": [],
             "edge_attr": [],
-            'num_nodes': [],
+            "num_nodes": [],
         }
         ps = {
             "x": [],
@@ -407,7 +568,9 @@ class AffiNETy_dataset(Dataset):
             "z": [],
             "pos": [],
         }
-        pre_processed_path = f"{self.processed_dir}/../pre_processed/{self.dataset}_{i}.pt"
+        pre_processed_path = (
+            f"{self.processed_dir}/../pre_processed/{self.dataset}_{i}.pt"
+        )
         if os.path.exists(pre_processed_path):
             print("    already processed")
             return
@@ -420,7 +583,12 @@ class AffiNETy_dataset(Dataset):
                 or not os.path.exists(f"{self.p_dir}/{i}/prot_{j}.pdb")
                 or not os.path.exists(f"{self.p_dir}/{i}/prot_{j}.pdb")
             ):
-                print(f"Failed: cannot find files...", f"  {self.pl_dir}/{i}/prot_{j}.pdb",f"  {self.pl_dir}/{i}/lig_{j}.sdf", sep='\n')
+                print(
+                    f"Failed: cannot find files...",
+                    f"  {self.pl_dir}/{i}/prot_{j}.pdb",
+                    f"  {self.pl_dir}/{i}/lig_{j}.sdf",
+                    sep="\n",
+                )
                 return
             try:
                 pl_pro = read(f"{self.pl_dir}/{i}/prot_{j}.pdb")
@@ -430,7 +598,7 @@ class AffiNETy_dataset(Dataset):
                 pls["x"].append(x)
                 pls["edge_index"].append(edge_index)
                 pls["edge_attr"].append(edge_attr)
-                pls['num_nodes'] = len(pl.get_atomic_numbers())
+                pls["num_nodes"] = len(pl.get_atomic_numbers())
                 # P
                 p = read(f"{self.p_dir}/{i}/prot_{j}.pdb")
                 x, edge_index, edge_attr = ase_to_ViSNet_data_graphSage(p)
@@ -448,8 +616,12 @@ class AffiNETy_dataset(Dataset):
             try:
                 l = rdkit_mol_to_ase_atoms(j)
                 x, edge_index, edge_attr = ase_to_ViSNet_data_graphSage(l)
-                z = torch.tensor(l.get_atomic_numbers(), dtype=torch.int64) # Required for ViSNet
-                pos = torch.tensor(l.get_positions(), dtype=torch.float, requires_grad=True) # Required for ViSNet
+                z = torch.tensor(
+                    l.get_atomic_numbers(), dtype=torch.int64
+                )  # Required for ViSNet
+                pos = torch.tensor(
+                    l.get_positions(), dtype=torch.float, requires_grad=True
+                )  # Required for ViSNet
                 ls["z"].append(z)
                 ls["pos"].append(pos)
                 ls["x"].append(x)
@@ -461,13 +633,14 @@ class AffiNETy_dataset(Dataset):
                 failed = True
                 break
         if len(pls["x"]) == 0 or len(ps["x"]) == 0 or len(ls["z"]) == 0 or failed:
-            print("Failed to update:", len(pls['x']), len(ps['x']), len(ls['z']), failed)
+            print(
+                "Failed to update:", len(pls["x"]), len(ps["x"]), len(ls["z"]), failed
+            )
             return
-
 
         _d = Data(
             # pl
-            num_nodes=pls['num_nodes'],
+            num_nodes=pls["num_nodes"],
             pl_x=pls["x"],
             pl_edge_index=pls["edge_index"],
             pl_edge_attr=pls["edge_attr"],
@@ -482,9 +655,15 @@ class AffiNETy_dataset(Dataset):
             l_z=ls["z"],
             l_pos=ls["pos"],
             y=self.power_ranking_dict[i],
-            pl_batch=torch.tensor([0 for _ in range(len(pls['x'][0]))], dtype=torch.int64),
-            p_batch=torch.tensor([0 for _ in range(len(ps['x'][0]))], dtype=torch.int64),
-            l_batch=torch.tensor([0 for _ in range(len(ls['x'][0]))], dtype=torch.int64),
+            pl_batch=torch.tensor(
+                [0 for _ in range(len(pls["x"][0]))], dtype=torch.int64
+            ),
+            p_batch=torch.tensor(
+                [0 for _ in range(len(ps["x"][0]))], dtype=torch.int64
+            ),
+            l_batch=torch.tensor(
+                [0 for _ in range(len(ls["x"][0]))], dtype=torch.int64
+            ),
         )
         print(_d)
         print(f"  {pre_processed_path = }")
@@ -493,8 +672,28 @@ class AffiNETy_dataset(Dataset):
 
     def generate_data(self):
         for n, pdb_id in enumerate(self.pdb_ids):
-            conformers = self.df_lig[self.df_lig["pdb_id"] == pdb_id]["conformers"].to_list()[0]
-            yield (n, pdb_id, conformers)
+            lig_confs = self.df_lig[self.df_lig["pdb_id"] == pdb_id][
+                "conformers"
+            ].to_list()[0]
+            yield (n, pdb_id, lig_confs)
+
+    def generate_data_parallel(self):
+        for n, pdb_id in enumerate(self.pdb_ids):
+            lig_confs = self.df_lig[self.df_lig["pdb_id"] == pdb_id][
+                "conformers"
+            ].to_list()[0]
+            yield (
+                n,
+                pdb_id,
+                lig_confs,
+                self.processed_dir,
+                self.ensure_processed,
+                self.power_ranking_dict,
+                self.dataset,
+                self.num_confs_protein,
+                self.pl_dir,
+                self.p_dir,
+            )
 
     def chunks(self, data, chunk_size):
         """Yield successive chunk_size chunks from data."""
@@ -513,8 +712,8 @@ class AffiNETy_dataset(Dataset):
             os.mkdir(f"{self.processed_dir}/../pre_processed")
         if self.NUM_THREADS > 1:
             with Pool(processes=self.NUM_THREADS) as pool:
-                for data_chunk in self.chunks(self.generate_data(), self.chunk_size):
-                    pool.map(self.process_single_pdb, data_chunk)
+                for data_chunk in self.chunks(self.generate_data_parallel(), self.chunk_size):
+                    pool.map(process_single_pdb_parallel, data_chunk)
         else:
             for d in self.generate_data():
                 self.process_single_pdb(d)
@@ -535,6 +734,7 @@ class AffiNETy_dataset(Dataset):
     def get(self, idx):
         data = torch.load(osp.join(self.processed_dir, f"{self.dataset}_{idx}.pt"))
         return data
+
 
 def main():
     import argparse

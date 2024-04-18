@@ -10,7 +10,7 @@ print("imports done!\n")
 
 NUM_THREADS = os.getenv("OMP_NUM_THREADS")
 if NUM_THREADS != "":
-    NUM_THREADS = 1
+    NUM_THREADS = 14
 else:
     NUM_THREADS = int(NUM_THREADS)
 parser = argparse.ArgumentParser(description="Process the PDBBIND setting")
@@ -62,12 +62,12 @@ def process_K_label(l: str):
     conv = unit_conversion(l[-2:])
     if "Ki" == l[:2] or "Kd" == l[:2]:
         l = l.replace("Ki", "").replace("Kd", "").replace("<", "").replace(">", "").replace("=", "").replace("~", "")
-        v = float(l[:-2])
-        return -math.log(v * conv)
+        val = float(l[:-2])
+        return -math.log(val * conv)
     elif "Ka=" == l[:3]:
         l = l.replace("Ki", "").replace("Ki", "").replace("<", "").replace(">", "").replace("=", "").replace("~", "")
-        v = float(l[:-2])
-        return math.log(v * conv)
+        val = float(l[:-2])
+        return math.log(val * conv)
     else:
         return None
 
@@ -95,15 +95,16 @@ def cleanup_input_labels():
 
 def main():
     cleanup_input_labels()
+    # return
     AffiNETy_dataset(
-        root=f"data_{v}",
+        root=f"data_n_8_{v}",
         dataset=v,
         NUM_THREADS=NUM_THREADS,
         pl_dir=pl_dir,
         p_dir=p_dir,
         l_pkl=l_pkl,
         power_ranking_file=power_ranking_file_pkl,
-        num_confs_protein=2,
+        num_confs_protein=8,
         ensure_processed=True,
     )
     return

@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=AF-DL-PDBBIND
-#SBATCH -N1 -n6 #number of nodes and cores required per job
+#SBATCH -N1 -n12 #number of nodes and cores required per job
 #SBATCH --mem-per-cpu=8G #memory per core
 #SBATCH --time=16:00:00
 #SBATCH -pice-cpu
@@ -20,5 +20,5 @@ fi
 unset __conda_setup
 conda activate /home/hice1/awallace43/scratch/miniconda3/envs/npl_td3
 
-#export OMP_NUM_THREADS=6
+export OMP_NUM_THREADS=12
 python3 data_loader.py --pdbbind
