@@ -121,4 +121,6 @@ tmp.py
 sf/data_casf_og
 sf/data_pdbbind_og
 sf/models
-
+data_casf_8/
+data_n_8_casf/
+data_n_8_pdbbind/
