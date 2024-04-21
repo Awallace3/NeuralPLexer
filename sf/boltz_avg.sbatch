@@ -1,10 +1,11 @@
 #!/bin/bash
-#SBATCH --job-name=AF-DL-PDBBIND
-#SBATCH -N1 -n12 #number of nodes and cores required per job
+#SBATCH --job-name=AN-b-avg
+#SBATCH -N1 -n12
 #SBATCH --mem-per-cpu=8G #memory per core
 #SBATCH --time=16:00:00
-#SBATCH -pice-cpu
-#SBATCH --output=outs/dl_affinety_pdbbind.out
+#SBATCH -pice-gpu
+#SBATCH --gres=gpu:A100:1
+#SBATCH --output=outs/AN-boltz-avg.out
 
 cd $SLURM_SUBMIT_DIR
 __conda_setup="$('/home/hice1/awallace43/scratch/miniconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
@@ -22,4 +23,4 @@ conda activate /home/hice1/awallace43/scratch/miniconda3/envs/npl_td3
 
 export OMP_NUM_THREADS=12
 echo "Starting script..."
-python3 data_loader.py --pdbbind
+python3 ./train_affinety_boltz_avg.py --pdbbind

@@ -52,9 +52,9 @@ def main():
     )
     m = models.AffiNETy(
         dataset=ds,
-        # model=models.AffiNETy_graphSage_boltzmann_avg,
+        model=models.AffiNETy_graphSage_boltzmann_avg,
         # model=models.AffiNETy_graphSage_boltzmann_avg_Q,
-        model=models.AffiNETy_graphSage_boltzmann_mlp,
+        # model=models.AffiNETy_graphSage_boltzmann_mlp,
         pl_in=num_confs_protein,
         p_in=num_confs_protein,
         num_workers=NUM_THREADS,
