@@ -1,4 +1,4 @@
-name: neuralplexer_dev
+name: npl_td
 channels:
   - nvidia
   - pytorch
@@ -9,8 +9,10 @@ channels:
 dependencies:
   - python >=3.8
   - pip
-  - pytorch >=1.10.0
-  - pytorch-cuda
+  - pytorch
+  - pytorch-cuda==12.1
+  - torchvision
+  - torchaudio
   - biopython
   - prody
   - deprecated
@@ -36,6 +38,6 @@ dependencies:
   - python-lmdb
   - vim
   - wandb
+  - ase
   - pip:
-    - -r requirements.txt
-
+    - -r NeuralPLexer-requirements.txt

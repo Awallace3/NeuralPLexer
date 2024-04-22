@@ -1,0 +1,1 @@
+openfold @ git+https://github.com/aqlaboratory/openfold.git@103d0370ad9ce07579c20fa9c889a632f9b16618
