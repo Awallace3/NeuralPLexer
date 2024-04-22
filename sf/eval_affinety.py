@@ -46,22 +46,32 @@ def main():
         num_confs_protein=num_confs_protein,
         ensure_processed=False,
     )
-    m = models.AffiNETy(
-        dataset=ds,
-        # model=models.AffiNETy_graphSage_boltzmann_avg,
-        # model=models.AffiNETy_graphSage_boltzmann_avg_Q,
-        model=models.AffiNETy_graphSage_boltzmann_mlp,
-        pl_in=num_confs_protein,
-        p_in=num_confs_protein,
-        num_workers=NUM_THREADS,
-        use_GPU=True,
-        lr=1e-4,
-    )
-    b_mlp_results = m.predict(
-        batch_size=16,
-        pre_trained_model='prev',
-    )
-    print(b_mlp_results)
+    trained_models = [
+            models.AffiNETy_graphSage_boltzmann_avg,
+            models.AffiNETy_graphSage_boltzmann_avg_Q,
+            models.AffiNETy_graphSage_boltzmann_mlp,
+    ]
+    results = {}
+    for n, i in enumerate(trained_models):
+        m = models.AffiNETy(
+            dataset=ds,
+            model=i,
+            pl_in=num_confs_protein,
+            p_in=num_confs_protein,
+            num_workers=NUM_THREADS,
+            use_GPU=True,
+            lr=1e-4,
+        )
+        b_mlp_results = m.eval_casf(
+            batch_size=16,
+            pre_trained_model='prev',
+        )
+        print(b_mlp_results)
+        if n == 0:
+            results['CASF2016'] = b_mlp_results[1, :]
+        results[m.model.model_output()] = b_mlp_results[0, :]
+    df = pd.DataFrame(results)
+    df.to_csv("./outs/eval_casf.csv")
     return
 
 
