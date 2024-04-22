@@ -880,3 +880,45 @@ class AffiNETy:
                     self.model.state_dict(), f"models/{self.model.model_output()}.pt"
                 )
         return
+
+    def predict(
+        self,
+        batch_size=2,
+        pre_trained_model=None,
+    ):
+        if self.dataset is None and dataset is not None:
+            self.dataset = dataset
+        if self.dataset is None:
+            raise ValueError("No dataset provided!")
+        if pre_trained_model is None:
+            raise ValueError("Need to specify a trained model! It can be a path to a model or 'prev' to usethe most recently trained model")
+        if pre_trained_model == 'prev':
+            pre_trained_model = f"models/{self.model.model_output()}.pt"
+        if os.path.exists(pre_trained_model):
+            self.model.load_state_dict(torch.load(pre_trained_model))
+        data_loader = DataLoader(self.dataset, batch_size=batch_size, shuffle=False)
+
+        if torch.cuda.is_available() and self.use_GPU:
+            gpu_enabled = True
+            device = torch.device("cuda:0")
+            print("running on the GPU")
+            self.model = self.model.cuda()
+            self.model = self.model.to(device)
+        else:
+            gpu_enabled = False
+            device = torch.device("cpu")
+            print("running on the CPU")
+        self.model.eval()
+        with torch.no_grad():
+            preds = []
+            true = []
+            for batch in data_loader :
+                for data in batch.to_data_list():
+                    data = data.to(device)
+                    out = self.model(data, device)
+                    preds.append(out.view(-1))
+                    true.append(data.y.view(-1))
+        preds = torch.cat(preds)
+        true = torch.cat(true)
+        results = result = torch.cat((preds.unsqueeze(0), true.unsqueeze(0)), dim=0).transpose()
+        return results

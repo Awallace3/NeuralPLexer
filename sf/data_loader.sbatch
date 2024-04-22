@@ -23,4 +23,4 @@ conda activate /home/hice1/awallace43/scratch/miniconda3/envs/npl_td3
 
 export OMP_NUM_THREADS=12
 echo 'python3 data_loader.py'
-python3 data_loader.py
+python3 -u data_loader.py

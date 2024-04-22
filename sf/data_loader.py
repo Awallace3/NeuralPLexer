@@ -30,7 +30,8 @@ if PDBBIND:
     l_pkl = "/storage/ice1/7/3/awallace43/pdb_gen/l/pdbbind_final.pkl"
     v = "pdbbind"
     power_ranking_file = "/storage/ice1/7/3/awallace43/index/INDEX_general_PL.2020.csv"
-    power_ranking_file_pkl = power_ranking_file.replace("csv", "pkl")
+    # power_ranking_file_pkl = power_ranking_file.replace("csv", "pkl")
+    power_ranking_file_pkl = power_ranking_file.replace(".csv", "_full.pkl")
 else:
     pl_dir = "/storage/ice1/7/3/awallace43/casf2016/pl"
     p_dir = "/storage/ice1/7/3/awallace43/casf2016/p"
@@ -68,6 +69,11 @@ def process_K_label(l: str):
         l = l.replace("Ki", "").replace("Ki", "").replace("<", "").replace(">", "").replace("=", "").replace("~", "")
         val = float(l[:-2])
         return math.log(val * conv)
+    elif "IC50" in l:
+        l = l.replace("IC50", "").replace("Ki", "").replace("<", "").replace(">", "").replace("=", "").replace("~", "")
+        print(l)
+        val = float(l[:-2])
+        return math.log(val * conv)
     else:
         return None
 
@@ -97,7 +103,7 @@ def main():
     cleanup_input_labels()
     # return
     AffiNETy_dataset(
-        root=f"data_n_8_{v}",
+        root=f"data_n_8_full_{v}",
         dataset=v,
         NUM_THREADS=NUM_THREADS,
         pl_dir=pl_dir,
