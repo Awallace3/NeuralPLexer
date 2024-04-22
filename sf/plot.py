@@ -4,15 +4,17 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 import matplotlib.pyplot as plt
 
 def plot_eval_casf():
-    df = pd.read_csv("./outs/eval_casf.csv")
+    df = pd.read_csv("./outs/eval_casf.csv", index_col='i')
     ref_column = "CASF2016"
     model_prediction_columns = [
         "AffiNETy_graphSage_boltzmann_avg",
         "AffiNETy_graphSage_boltzmann_avg_Q",
         "AffiNETy_graphSage_boltzmann_mlp",
     ]
+    spearman = df.corr()
+    print(spearman)
 
-    for col in model_prediction_columns:
+    for n, col in enumerate(model_prediction_columns):
         # Calculate the MAE and RMSE
         y_true = df[ref_column].values
         y_pred = df[col].values
@@ -22,10 +24,12 @@ def plot_eval_casf():
         # Plot the data
         plt.figure()
         plt.scatter(y_true, y_pred, edgecolor='k', facecolor='none')
-        plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], 'r--', lw=2)  # Diagonal reference line
+        plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], 'r--', lw=2, label='Diagonal Reference')  # Diagonal reference line
+        plt.legend()
 
         # Annotate the plot with MAE and RMSE
-        plt.legend([f'MAE: {mae:.3f}', f'RMSE: {rmse:.3f}'])
+        # plt.legend([f'MAE: {mae:.3f}', f'RMSE: {rmse:.3f}'])
+        # plt.legend([f'MAE: {mae:.3f}', f'RMSE: {rmse:.3f}'])
 
         plt.title(f'Predictions vs. {ref_column} Reference')
         plt.xlabel('Reference Values')

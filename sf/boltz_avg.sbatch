@@ -4,7 +4,7 @@
 #SBATCH --mem-per-cpu=8G #memory per core
 #SBATCH --time=16:00:00
 #SBATCH -pice-gpu
-#SBATCH --gres=gpu:A100:1
+#SBATCH --gres=gpu:V100:1
 #SBATCH --output=outs/AN-boltz-avg.out
 
 cd $SLURM_SUBMIT_DIR
@@ -23,4 +23,4 @@ conda activate /home/hice1/awallace43/scratch/miniconda3/envs/npl_td3
 
 export OMP_NUM_THREADS=12
 echo "Starting script..."
-python3 ./train_affinety_boltz_avg.py --pdbbind
+python3 -u ./train_affinety_boltz_avg.py --pdbbind

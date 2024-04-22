@@ -20,7 +20,7 @@ parser.add_argument(
 args = parser.parse_args()
 print(f"PDBBIND setting: {args.PDBBIND}")
 
-PDBBIND = not args.PDBBIND
+PDBBIND = args.PDBBIND
 if PDBBIND:
     pl_dir = "/storage/ice1/7/3/awallace43/pdb_gen/pl"
     p_dir = "/storage/ice1/7/3/awallace43/pdb_gen/p"
