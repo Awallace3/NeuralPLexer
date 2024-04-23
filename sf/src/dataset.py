@@ -329,10 +329,14 @@ class AffiNETy_PL_P_L_dataset(Dataset):
         pre_processed_files = glob(f"{self.processed_dir}/../pre_processed/*")
         # print(pre_processed_files)
         print("Copying files...")
+        mappings = {}
         for n, i in enumerate(pre_processed_files):
             cmd = f"mv {i} {self.processed_dir}/{self.dataset}_{n}.pt"
+            mappings[i] = f"{self.processed_dir}/{self.dataset}_{n}.pt"
             # print(cmd)
             os.system(cmd)
+        with open(f'{self.processed_dir}/mappings.pkl', 'wb') as handle:
+            pickle.dump(a, handle, protocol=pickle.HIGHEST_PROTOCOL)
         return
 
     def len(self):
@@ -379,6 +383,7 @@ def process_single_pdb_parallel(datapoint):
         "edge_attr": [],
         "z": [],
         "pos": [],
+        "num_rotatable_bonds": [],
     }
     pre_processed_path = f"{processed_dir}/../pre_processed/{dataset}_{i}.pt"
     if os.path.exists(pre_processed_path):
@@ -567,6 +572,7 @@ class AffiNETy_dataset(Dataset):
             "edge_attr": [],
             "z": [],
             "pos": [],
+            "num_rotatable_bonds": [],
         }
         pre_processed_path = (
             f"{self.processed_dir}/../pre_processed/{self.dataset}_{i}.pt"
@@ -722,10 +728,15 @@ class AffiNETy_dataset(Dataset):
         pre_processed_files = glob(f"{self.processed_dir}/../pre_processed/*")
         # print(pre_processed_files)
         print("Copying files...")
+        mappings = {}
         for n, i in enumerate(pre_processed_files):
             cmd = f"mv {i} {self.processed_dir}/{self.dataset}_{n}.pt"
+            mappings[i] = f"{self.processed_dir}/{self.dataset}_{n}.pt"
             # print(cmd)
             os.system(cmd)
+        print(mappings)
+        with open(f'{self.processed_dir}/mappings.pkl', 'wb') as handle:
+            pickle.dump(a, handle, protocol=pickle.HIGHEST_PROTOCOL)
         return
 
     def len(self):

@@ -524,7 +524,7 @@ class AffiNETy_graphSage_boltzmann_avg_Q(nn.Module):
         l_e_avg = torch.mean(boltzmannFactorRescaling(l_es))
 
         RT = 1.98720425864083 / 1000 * self.temperature  # (kcal * K) / (mol * K)
-        val = (pl_e_avg - p_e_avg - l_e_avg) / -RT
+        val = (pl_e_avg - p_e_avg - l_e_avg) / RT
         if val > 0:
             val = torch.log(val)
         return val

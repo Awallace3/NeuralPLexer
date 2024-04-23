@@ -47,7 +47,7 @@ def main():
         ensure_processed=False,
     )
     trained_models = [
-            models.AffiNETy_graphSage_boltzmann_avg,
+            # models.AffiNETy_graphSage_boltzmann_avg,
             models.AffiNETy_graphSage_boltzmann_avg_Q,
             models.AffiNETy_graphSage_boltzmann_mlp,
     ]
