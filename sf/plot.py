@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 def plot_eval_casf():
     df = pd.read_csv("./outs/eval_casf.csv", index_col='i')
+    print(df)
     ref_column = "CASF2016"
     model_prediction_columns = [
         "AffiNETy_graphSage_boltzmann_avg",
