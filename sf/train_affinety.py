@@ -2,6 +2,7 @@ from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset, AffiNETy_torc
 from src import models
 import os
 import argparse
+from torch_geometric.nn.models import ViSNet
 
 print("imports done!\n")
 
@@ -67,7 +68,6 @@ def train_graphSage_models(num_confs_protein):
     )
 
 
-
 def train_torchMD_models(num_confs_protein):
     from torchmdnet.models.model import load_model
     ds = AffiNETy_torchmd_dataset(
@@ -87,9 +87,9 @@ def train_torchMD_models(num_confs_protein):
     m = models.AffiNETy(
         dataset=ds,
         model=models.AffiNETy_equivariant_torchmdnet_boltzmann_mlp,
-        pl_model=load_model(model_path),
-        p_model= load_model(model_path),
-        l_model= load_model(model_path),
+        pl_model=load_model(model_path, derivative=False),
+        p_model= load_model(model_path, derivative=False),
+        l_model= load_model(model_path, derivative=False),
         pl_in=num_confs_protein,
         p_in=num_confs_protein,
         num_workers=NUM_THREADS,
@@ -97,16 +97,56 @@ def train_torchMD_models(num_confs_protein):
         lr=1e-4,
     )
     m.train(
-        batch_size=1,
+        batch_size=2,
         pre_trained_model='prev',
         # verbose=True,
         # pre_trained_model="./models/AffiNETy_mean.pt"
     )
 
+def train_ViSNet_models(num_confs_protein):
+    from torchmdnet.models.model import load_model
+    ds = AffiNETy_torchmd_dataset(
+        root=f"data_n_{num_confs_protein}_full_{v}",
+        dataset=v,
+        NUM_THREADS=NUM_THREADS,
+        pl_dir=pl_dir,
+        p_dir=p_dir,
+        l_pkl=l_pkl,
+        power_ranking_file=power_ranking_file_pkl,
+        num_confs_protein=num_confs_protein,
+        ensure_processed=False,
+    )
+    model_path = "/storage/ice1/7/3/awallace43/torchmd_data/epoch=2139-val_loss=0.2543-test_loss=0.2317.ckpt"
+    # model_path = "/home/hice1/awallace43/scratch/torchmd_data/ani/ANI1-equivariant_transformer/epoch=359-val_loss=0.0004-test_loss=0.0120.ckpt"
+    # model_path = "/storage/ice1/7/3/awallace43/torchmd_data/epoch=649-val_loss=0.0003-test_loss=0.0059.ckpt"
+    model = ViSNet(cutoff=3.0, hidden_channels=48, num_heads=4, num_layers=6, )
+    m = models.AffiNETy(
+        dataset=ds,
+        model=models.AffiNETy_ViSNet_boltzmann_mlp,
+        pl_model=ViSNet(cutoff=3.0, hidden_channels=48, num_heads=4, num_layers=6, ),
+        # p_model=ViSNet( cutoff=3.0, hidden_channels=48, num_heads=4, num_layers=6, ),
+        # l_model=ViSNet( cutoff=3.0, hidden_channels=48, num_heads=4, num_layers=6, ),
+        # pl_model=load_model(model_path, derivative=False),
+        # p_model= load_model(model_path, derivative=False),
+        # l_model= load_model(model_path, derivative=False),
+        pl_in=num_confs_protein,
+        p_in=num_confs_protein,
+        num_workers=NUM_THREADS,
+        use_GPU=True,
+        lr=1e-4,
+    )
+    m.train(
+        batch_size=4,
+        pre_trained_model='prev',
+        verbose=True,
+        # pre_trained_model="./models/AffiNETy_mean.pt"
+    )
+
 def main():
     num_confs_protein=8
-    train_torchMD_models(num_confs_protein)
-    # train_graphSage_models(num_confs_protein)
+    # train_torchMD_models(num_confs_protein)
+    # train_ViSNet_models(num_confs_protein)
+    train_graphSage_models(num_confs_protein)
     return
 
 
