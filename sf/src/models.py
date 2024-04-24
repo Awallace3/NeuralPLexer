@@ -5,10 +5,38 @@ import torch_geometric
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn.models import ViSNet, GraphSAGE
+from torchmdnet.models.model import load_model
 
 import torch.distributed as dist
 import sys
 
+def torch_gpu_memory():
+    # Check if CUDA is available
+    if torch.cuda.is_available():
+        # Select your GPU device if multiple GPUs are available
+        # device = torch.device('cuda:0')  # Default to first GPU if specific not specified
+        # Alternatively, specify the device index directly in the memory functions
+
+        # Get the total GPU memory
+        total_memory = torch.cuda.get_device_properties(0).total_memory  # In bytes
+
+        # Get the current GPU memory usage by tensors in bytes
+        allocated_memory = torch.cuda.memory_allocated(0)
+
+        # Get the current GPU cached memory in bytes
+        cached_memory = torch.cuda.memory_reserved(0)
+
+        # Convert bytes to gigabytes for easier interpretation
+        total_memory_gb = total_memory / (1024**3)
+        allocated_memory_gb = allocated_memory / (1024**3)
+        cached_memory_gb = cached_memory / (1024**3)
+
+        # Print memory usage
+        print(f"  Total GPU Memory (GB): {total_memory_gb:.2f}")
+        print(f"  Allocated Memory (GB): {allocated_memory_gb:.2f}")
+        print(f"  Cached Memory (GB): {cached_memory_gb:.2f}")
+    else:
+        print("CUDA is not available")
 
 def boltzmannFactorRescaling(ensemble_energies: torch.tensor):
     RT = 1.98720425864083 / 1000 * 298  # (kcal * K) / (mol * K)
@@ -441,6 +469,165 @@ class AffiNETy_graphSage_boltzmann_mlp(nn.Module):
         #     val = torch.log(val)
         return val
 
+model_path = "/storage/ice1/7/3/awallace43/torchmd_data/epoch=2139-val_loss=0.2543-test_loss=0.2317.ckpt"
+
+class AffiNETy_equivariant_torchmdnet_boltzmann_mlp(nn.Module):
+    def __init__(
+        self,
+        pl_model=load_model(model_path),
+        p_model= load_model(model_path),
+        l_model= load_model(model_path),
+        temperature=298.0,
+        pl_in=8,
+        p_in=8,
+        l_in=20,
+    ):
+        """
+        Initialize the model with two ViSNet instances.
+
+        Parameters:
+        - visnet_pl: Pretrained ViSNet model for PL graphs.
+        - visnet_l: Pretrained ViSNet model for L graphs.
+
+        Objectives:
+        AffiNETy_PL_L is designed to take in N PL graphs, and M L graphs.
+        ViSNet will be evaluated on each graph with results.
+        data should be like:
+        the model will initially start with pre-trained ViSNet models,
+        but will use ViSNet on each pl set of graphs and ligand set of graphs
+        before performing a sum to predict the final ouptut value.
+        """
+        super(AffiNETy_equivariant_torchmdnet_boltzmann_mlp, self).__init__()
+        self.pl_model = pl_model
+        self.p_model = p_model
+        self.l_model = l_model
+        self.temperature = temperature
+
+        self.pl_n1 = nn.Linear(pl_in, 32)
+        self.pl_relu1 = nn.ReLU()
+        self.pl_n2 = nn.Linear(32, 32)
+        self.pl_relu2 = nn.ReLU()
+        self.pl_n3 = nn.Linear(32, 1)
+        self.pl_relu3 = nn.ReLU()
+
+        self.p_n1 = nn.Linear(p_in, 32)
+        self.p_relu1 = nn.ReLU()
+        self.p_n2 = nn.Linear(32, 32)
+        self.p_relu2 = nn.ReLU()
+        self.p_n3 = nn.Linear(32, 1)
+        self.p_relu3 = nn.ReLU()
+
+        self.l_n1 = nn.Linear(l_in, 32)
+        self.l_relu1 = nn.ReLU()
+        self.l_n2 = nn.Linear(32, 32)
+        self.l_relu2 = nn.ReLU()
+        self.l_n3 = nn.Linear(32, 1)
+        self.l_relu3 = nn.ReLU()
+
+    def model_output(self):
+        return "AffiNETy_equivariant_torchmdnet_boltzmann_mlp"
+
+    def forward(self, data, device):
+        """
+        Forward pass through the model.
+
+        Parameters:
+        - data_list: A list of Data objects, where each object contains fields for PL and L graphs.
+
+        Returns:
+        - torch.Tensor: The predicted output values.
+        """
+        # pl_es = torch.zeros(len(data.pl_z), dtype=torch.float, device=device)
+        # p_es = torch.zeros(len(data.p_z), dtype=torch.float, device=device)
+        # l_es = torch.zeros(len(data.l_z), dtype=torch.float, device=device)
+        pl_es = torch.zeros(len(data.pl_z), dtype=torch.float, device='cpu')
+        p_es = torch.zeros(len(data.p_z), dtype=torch.float, device='cpu')
+        l_es = torch.zeros(len(data.l_z), dtype=torch.float, device='cpu')
+        torch_gpu_memory()
+        for i in range(len(data.l_z)):
+            z = data.l_z[i].clone().to(device)
+            pos = data.l_pos[i].clone().to(device)
+            out = self.l_model(
+                z,
+                pos,
+            )
+            l_es[i] = out[0].cpu()
+            del out
+            del z
+            del pos
+            torch.cuda.empty_cache()  # Clears cached memory
+        print(f"{l_es = }")
+        torch_gpu_memory()
+        for i in range(len(data.pl_z)):
+            print(f"Start {i = }")
+            torch_gpu_memory()
+            z = data.pl_z[i].to(device)
+            pos = data.pl_pos[i].to(device)
+            out = self.pl_model(
+                z,
+                pos,
+            )
+            pl_es[i] = out[0].cpu()
+            print("pre-delete")
+            torch_gpu_memory()
+            del out
+            del z
+            del pos
+            torch.cuda.empty_cache()  # Clears cached memory
+        print(f"{pl_es = }", pl_es.device)
+        torch_gpu_memory()
+        for i in range(len(data.p_z)):
+            print(f"Start {i = }")
+            torch_gpu_memory()
+            z = data.p_z[i].to(device)
+            pos = data.p_pos[i].to(device)
+            out = self.p_model(
+                z,
+                pos,
+            )
+            p_es[i] = out[0].cpu()
+            print("pre-delete")
+            torch_gpu_memory()
+            del out
+            del z
+            del pos
+            torch.cuda.empty_cache()  # Clears cached memory
+        print(f"{pl_es = }", pl_es.device)
+        # for i in range(len(data.p_z)):
+        #     z = data.p_z[i].clone().to(device)
+        #     pos = data.p_pos[i].clone().to(device)
+        #     out = self.p_model(
+        #         z,
+        #         pos,
+        #     )
+        #     p_es[i] = out[0].cpu()
+        #     del out
+        #     del z
+        #     del pos
+        #     torch.cuda.empty_cache()  # Clears cached memory
+        torch_gpu_memory()
+        print(f"{p_es = }")
+
+        pl_es, _ = torch.sort(pl_es)
+        p_es, _ = torch.sort(p_es)
+        l_es, _ = torch.sort(l_es)
+
+        pl_e_avg = self.pl_relu3(
+            self.pl_n3(self.pl_relu2(self.pl_n2(self.pl_relu1(self.pl_n1(pl_es)))))
+        )
+        p_e_avg = self.p_relu3(
+            self.p_n3(self.p_relu2(self.p_n2(self.p_relu1(self.p_n1(p_es)))))
+        )
+        l_e_avg = self.l_relu3(
+            self.l_n3(self.l_relu2(self.l_n2(self.l_relu1(self.l_n1(l_es)))))
+        )
+
+        RT = 1.98720425864083 / 1000 * self.temperature  # (kcal * K) / (mol * K)
+        val = (pl_e_avg - p_e_avg - l_e_avg) / -RT
+        # if val > 0:
+        #     val = torch.log(val)
+        return val
+
 
 class AffiNETy_graphSage_boltzmann_avg_Q(nn.Module):
     def __init__(
@@ -841,7 +1028,7 @@ class AffiNETy:
                 preds = []
                 true = []
                 for data in batch.to_data_list():
-                    data = data.to(device)
+                    # data = data.to(device)
                     out = self.model(data, device)
                     preds.append(out.view(-1))
                     true.append(data.y.view(-1))
@@ -864,7 +1051,7 @@ class AffiNETy:
                     preds = []
                     true = []
                     for data in batch.to_data_list():
-                        data = data.to(device)
+                        # data = data.to(device)
                         out = self.model(data, device)
                         preds.append(out.view(-1))
                         true.append(data.y.view(-1))

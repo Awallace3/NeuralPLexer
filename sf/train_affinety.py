@@ -1,4 +1,4 @@
-from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset
+from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset, AffiNETy_torchmd_dataset
 from src import models
 import os
 import argparse
@@ -37,8 +37,7 @@ else:
     v = "casf"
 
 
-def main():
-    num_confs_protein=8
+def train_graphSage_models(num_confs_protein):
     ds = AffiNETy_dataset(
         root=f"data_n_{num_confs_protein}_{v}",
         dataset=v,
@@ -66,6 +65,48 @@ def main():
         pre_trained_model='prev',
         # pre_trained_model="./models/AffiNETy_mean.pt"
     )
+
+
+
+def train_torchMD_models(num_confs_protein):
+    from torchmdnet.models.model import load_model
+    ds = AffiNETy_torchmd_dataset(
+        root=f"data_n_{num_confs_protein}_full_{v}",
+        dataset=v,
+        NUM_THREADS=NUM_THREADS,
+        pl_dir=pl_dir,
+        p_dir=p_dir,
+        l_pkl=l_pkl,
+        power_ranking_file=power_ranking_file_pkl,
+        num_confs_protein=num_confs_protein,
+        ensure_processed=False,
+    )
+    model_path = "/storage/ice1/7/3/awallace43/torchmd_data/epoch=2139-val_loss=0.2543-test_loss=0.2317.ckpt"
+    # model_path = "/home/hice1/awallace43/scratch/torchmd_data/ani/ANI1-equivariant_transformer/epoch=359-val_loss=0.0004-test_loss=0.0120.ckpt"
+    # model_path = "/storage/ice1/7/3/awallace43/torchmd_data/epoch=649-val_loss=0.0003-test_loss=0.0059.ckpt"
+    m = models.AffiNETy(
+        dataset=ds,
+        model=models.AffiNETy_equivariant_torchmdnet_boltzmann_mlp,
+        pl_model=load_model(model_path),
+        p_model= load_model(model_path),
+        l_model= load_model(model_path),
+        pl_in=num_confs_protein,
+        p_in=num_confs_protein,
+        num_workers=NUM_THREADS,
+        use_GPU=True,
+        lr=1e-4,
+    )
+    m.train(
+        batch_size=1,
+        pre_trained_model='prev',
+        # verbose=True,
+        # pre_trained_model="./models/AffiNETy_mean.pt"
+    )
+
+def main():
+    num_confs_protein=8
+    train_torchMD_models(num_confs_protein)
+    # train_graphSage_models(num_confs_protein)
     return
 
 

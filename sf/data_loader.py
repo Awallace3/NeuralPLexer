@@ -4,13 +4,13 @@ import argparse
 import pandas as pd
 import math
 
-from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset
+from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset, AffiNETy_torchmd_dataset
 
 print("imports done!\n")
 
 NUM_THREADS = os.getenv("OMP_NUM_THREADS")
 if NUM_THREADS != "":
-    NUM_THREADS = 14
+    NUM_THREADS = 12
 else:
     NUM_THREADS = int(NUM_THREADS)
 parser = argparse.ArgumentParser(description="Process the PDBBIND setting")
@@ -37,7 +37,8 @@ else:
     p_dir = "/storage/ice1/7/3/awallace43/casf2016/p"
     l_pkl = "/storage/ice1/7/3/awallace43/casf2016/l/casf_final.pkl"
     power_ranking_file = "/storage/ice1/7/3/awallace43/CASF-2016/power_ranking_coreset.csv"
-    power_ranking_file_pkl = power_ranking_file.replace("csv", "pkl")
+    # power_ranking_file_pkl = power_ranking_file.replace("csv", "pkl")
+    power_ranking_file_pkl = power_ranking_file.replace(".csv", "_full.pkl")
     v = "casf"
 
 
@@ -73,7 +74,7 @@ def process_K_label(l: str):
         l = l.replace("IC50", "").replace("Ki", "").replace("<", "").replace(">", "").replace("=", "").replace("~", "")
         print(l)
         val = float(l[:-2])
-        return math.log(val * conv)
+        return -math.log(val * conv)
     else:
         return None
 
@@ -102,6 +103,19 @@ def cleanup_input_labels():
 def main():
     cleanup_input_labels()
     # return
+    AffiNETy_torchmd_dataset(
+        root=f"data_n_8_full_{v}",
+        dataset=v,
+        NUM_THREADS=NUM_THREADS,
+        pl_dir=pl_dir,
+        p_dir=p_dir,
+        l_pkl=l_pkl,
+        power_ranking_file=power_ranking_file_pkl,
+        num_confs_protein=8,
+        ensure_processed=True,
+        chunk_size=1000,
+    )
+    return
     AffiNETy_dataset(
         root=f"data_n_8_full_{v}",
         dataset=v,
@@ -113,7 +127,6 @@ def main():
         num_confs_protein=8,
         ensure_processed=True,
     )
-    return
     AffiNETy_PL_P_L_dataset(
         root=f"data_PL_P_L_{v}",
         dataset=v,
