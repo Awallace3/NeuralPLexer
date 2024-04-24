@@ -63,7 +63,7 @@ def main():
     )
     m.train(
         batch_size=16,
-        pre_trained_model='prev',
+        # pre_trained_model='prev',
         # pre_trained_model="./models/AffiNETy_mean.pt"
     )
     return
