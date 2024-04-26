@@ -71,7 +71,7 @@ def main():
             results['CASF2016'] = b_mlp_results[1, :]
         results[m.model.model_output()] = b_mlp_results[0, :]
     df = pd.DataFrame(results)
-    df.to_csv("./outs/eval_casf.csv")
+    df.to_csv("./outs/eval_casf2.csv")
     return
 
 

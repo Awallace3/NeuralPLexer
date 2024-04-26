@@ -37,39 +37,6 @@ else:
     power_ranking_file_pkl = power_ranking_file.replace("csv", "pkl")
     v = "casf"
 
-def train_graphSage_AtomicEnergy_models(num_confs_protein):
-    ds = AffiNETy_dataset(
-        root=f"data_n_{num_confs_protein}_{v}",
-        dataset=v,
-        NUM_THREADS=NUM_THREADS,
-        pl_dir=pl_dir,
-        p_dir=p_dir,
-        l_pkl=l_pkl,
-        power_ranking_file=power_ranking_file_pkl,
-        num_confs_protein=num_confs_protein,
-        ensure_processed=False,
-    )
-    m = models.AffiNETy(
-        dataset=ds,
-        # model=models.AffiNETy_graphSage_boltzmann_avg,
-        # model=models.AffiNETy_graphSage_boltzmann_avg_Q,
-        # model=models.AffiNETy_graphSage_boltzmann_mlp,
-        # model=models.AffiNETy_graphSage_boltzmann_mlp,
-        model=models.AffiNETy_GCN_AtomicEnergy_boltzmann_mlp,
-        # model=models.AffiNETy_graphSage_AtomicEnergy_boltzmann_mlp,
-        pl_model=None,
-        pl_in=num_confs_protein,
-        p_in=num_confs_protein,
-        num_workers=NUM_THREADS,
-        use_GPU=True,
-        lr=1e-4,
-    )
-    m.train(
-        batch_size=4,
-        pre_trained_model='prev',
-        verbose=1,
-        # pre_trained_model="./models/AffiNETy_mean.pt"
-    )
 
 def train_graphSage_models(num_confs_protein):
     ds = AffiNETy_dataset(
@@ -87,9 +54,7 @@ def train_graphSage_models(num_confs_protein):
         dataset=ds,
         # model=models.AffiNETy_graphSage_boltzmann_avg,
         # model=models.AffiNETy_graphSage_boltzmann_avg_Q,
-        # model=models.AffiNETy_graphSage_boltzmann_mlp,
-        # model=models.AffiNETy_graphSage_boltzmann_mlp,
-        model=models.AffiNETy_graphSage_GCN_boltzmann_mlp,
+        model=models.AffiNETy_graphSage_boltzmann_mlp,
         pl_in=num_confs_protein,
         p_in=num_confs_protein,
         num_workers=NUM_THREADS,
@@ -97,7 +62,7 @@ def train_graphSage_models(num_confs_protein):
         lr=1e-4,
     )
     m.train(
-        batch_size=4,
+        batch_size=16,
         pre_trained_model='prev',
         # pre_trained_model="./models/AffiNETy_mean.pt"
     )
@@ -173,7 +138,7 @@ def train_ViSNet_models(num_confs_protein):
     m.train(
         batch_size=4,
         pre_trained_model='prev',
-        verbose=True,
+        # verbose=True,
         # pre_trained_model="./models/AffiNETy_mean.pt"
     )
 
@@ -182,8 +147,6 @@ def main():
     # train_torchMD_models(num_confs_protein)
     train_ViSNet_models(num_confs_protein)
     # train_graphSage_models(num_confs_protein)
-    # train_graphSage_GCN_models(num_confs_protein)
-    # train_graphSage_AtomicEnergy_models(num_confs_protein)
     return
 
 
