@@ -19,7 +19,7 @@ else
     fi
 fi
 unset __conda_setup
-conda activate /home/hice1/awallace43/scratch/miniconda3/envs/npl_td3
+conda activate /home/hice1/awallace43/scratch/miniconda3/envs/npl_td4
 
 export OMP_NUM_THREADS=12
 echo "Starting script..."

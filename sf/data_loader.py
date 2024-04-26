@@ -65,26 +65,32 @@ def process_K_label(l: str):
     if "Ki" == l[:2] or "Kd" == l[:2]:
         l = l.replace("Ki", "").replace("Kd", "").replace("<", "").replace(">", "").replace("=", "").replace("~", "")
         val = float(l[:-2])
-        return -math.log(val * conv)
+        return -math.log10(val * conv)
     elif "Ka=" == l[:3]:
         l = l.replace("Ki", "").replace("Ki", "").replace("<", "").replace(">", "").replace("=", "").replace("~", "")
         val = float(l[:-2])
-        return math.log(val * conv)
+        return math.log10(val * conv)
     elif "IC50" in l:
         l = l.replace("IC50", "").replace("Ki", "").replace("<", "").replace(">", "").replace("=", "").replace("~", "")
         print(l)
         val = float(l[:-2])
-        return -math.log(val * conv)
+        return -math.log10(val * conv)
     else:
         return None
-
 
 def cleanup_input_labels():
     if os.path.exists(power_ranking_file_pkl):
         return
     import pickle
     df = pd.read_csv(power_ranking_file, delimiter=",")
+    # df["pK"] = df["Ka"].apply(lambda x: process_K_label(x))
+    # print(df.columns.values)
+    # for n, i in df.iterrows():
+    #     pK = process_K_label(i['Ka'])
+    #     print(i[''])
+
     df["pK"] = df["Ka"].apply(lambda x: process_K_label(x))
+    print(df["pK"].max())
     print(len(df))
     df.dropna(subset=['pK'], inplace=True)
     print(len(df))
@@ -113,7 +119,7 @@ def main():
         power_ranking_file=power_ranking_file_pkl,
         num_confs_protein=8,
         ensure_processed=True,
-        chunk_size=1000,
+        chunk_size=100000,
     )
     return
     AffiNETy_dataset(
@@ -127,6 +133,7 @@ def main():
         num_confs_protein=8,
         ensure_processed=True,
     )
+    return
     AffiNETy_PL_P_L_dataset(
         root=f"data_PL_P_L_{v}",
         dataset=v,

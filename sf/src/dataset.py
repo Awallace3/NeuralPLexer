@@ -1136,7 +1136,8 @@ class AffiNETy_torchmd_dataset(Dataset):
         mappings = {}
         for n, i in enumerate(pre_processed_files):
             cmd = f"mv {i} {self.processed_dir}/{self.dataset}_{n}.pt"
-            mappings[i] = f"{self.processed_dir}/{self.dataset}_{n}.pt"
+            pdb_id = i.split(".")[-2][-4:]
+            mappings[pdb_id] = f"{self.processed_dir}/{self.dataset}_{n}.pt"
             os.system(cmd)
         print(mappings)
         with open(f'{self.processed_dir}/mappings.pkl', 'wb') as handle:

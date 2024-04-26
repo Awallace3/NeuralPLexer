@@ -52,10 +52,7 @@ def main():
     )
     m = models.AffiNETy(
         dataset=ds,
-        # model=models.AffiNETy_graphSage_boltzmann_avg,
-        # model=models.AffiNETy_graphSage_boltzmann_avg_Q,
-        # model=models.AffiNETy_graphSage_boltzmann_mlp,
-        model=models.AffiNETy_graphSage_boltzmann_mlp,
+        model=models.AffiNETy_graphSage_boltzmann_mlp2,
         pl_in=num_confs_protein,
         p_in=num_confs_protein,
         num_workers=NUM_THREADS,
@@ -64,8 +61,6 @@ def main():
     )
     m.train(
         batch_size=16,
-        # pre_trained_model='prev',
-        # pre_trained_model="./models/AffiNETy_mean.pt"
     )
     return
 
