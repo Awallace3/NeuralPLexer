@@ -484,6 +484,178 @@ class AffiNETy_graphSage_boltzmann_mlp(nn.Module):
         #     val = torch.log(val)
         return val
 
+class AffiNETy_graphSage_boltzmann_mlp2(nn.Module):
+    def __init__(
+        self,
+        pl_model=GraphSAGE(-1, 5, 3),
+        p_model=GraphSAGE(-1, 5, 3),
+        l_model=GraphSAGE(-1, 5, 3),
+        temperature=298.0,
+        pl_in=2,
+        p_in=2,
+        l_in=20,
+    ):
+        super(AffiNETy_graphSage_boltzmann_mlp2, self).__init__()
+        self.pl_model = pl_model
+        self.p_model = p_model
+        self.l_model = l_model
+        self.temperature = temperature
+
+        self.pl_n1 = nn.Linear(pl_in, 32)
+        self.pl_relu1 = nn.ReLU()
+        self.pl_n2 = nn.Linear(32, 32)
+        self.pl_relu2 = nn.ReLU()
+        self.pl_n3 = nn.Linear(32, 1)
+
+        self.p_n1 = nn.Linear(p_in, 32)
+        self.p_relu1 = nn.ReLU()
+        self.p_n2 = nn.Linear(32, 32)
+        self.p_relu2 = nn.ReLU()
+        self.p_n3 = nn.Linear(32, 1)
+
+        self.l_n1 = nn.Linear(l_in, 32)
+        self.l_relu1 = nn.ReLU()
+        self.l_n2 = nn.Linear(32, 32)
+        self.l_relu2 = nn.ReLU()
+        self.l_n3 = nn.Linear(32, 1)
+
+    def model_output(self):
+        return "AffiNETy_graphSage_boltzmann_mlp2"
+
+    def forward(self, data, device):
+        """
+        Forward pass through the model.
+
+        Parameters:
+        - data_list: A list of Data objects, where each object contains fields for PL and L graphs.
+
+        Returns:
+        - torch.Tensor: The predicted output values.
+        """
+        pl_es = torch.zeros(len(data.pl_x), dtype=torch.float, device=device)
+        p_es = torch.zeros(len(data.p_x), dtype=torch.float, device=device)
+        l_es = torch.zeros(len(data.l_z), dtype=torch.float, device=device)
+        for i in range(len(data.l_z)):
+            batch = torch.zeros(len(data.l_x[i]), dtype=torch.int64, device=device)
+            out = self.l_model(
+                x=data.l_x[i].to(device),
+                edge_index=data.l_edge_index[i].to(device),
+                edge_attr=data.l_edge_attr[i].to(device),
+                batch=batch,
+            )
+            l_es[i] = torch.sum(out)
+        for i in range(len(data.pl_x)):
+            batch = torch.zeros(len(data.pl_x[i]), dtype=torch.int64, device=device)
+            out = self.pl_model(
+                x=data.pl_x[i].to(device),
+                edge_index=data.pl_edge_index[i].to(device),
+                edge_attr=data.pl_edge_attr[i].to(device),
+                batch=batch,
+            )
+            pl_es[i] = torch.sum(out)
+        for i in range(len(data.p_x)):
+            batch = torch.zeros(len(data.p_x[i]), dtype=torch.int64, device=device)
+            out = self.p_model(
+                x=data.p_x[i].to(device),
+                edge_index=data.p_edge_index[i].to(device),
+                edge_attr=data.p_edge_attr[i].to(device),
+                batch=batch,
+            )
+            p_es[i] = torch.sum(out)
+
+        pl_es, _ = torch.sort(pl_es)
+        p_es, _ = torch.sort(p_es)
+        l_es, _ = torch.sort(l_es)
+
+        pl_e_avg = self.pl_n3(self.pl_relu2(self.pl_n2(self.pl_relu1(self.pl_n1(pl_es))))
+        )
+        p_e_avg =  self.p_n3(self.p_relu2(self.p_n2(self.p_relu1(self.p_n1(p_es)))))
+        l_e_avg = self.l_n3(self.l_relu2(self.l_n2(self.l_relu1(self.l_n1(l_es)))))
+
+        RT = 1.98720425864083 / 1000 * self.temperature  # (kcal * K) / (mol * K)
+        val = (pl_e_avg - p_e_avg - l_e_avg) / -RT
+        # if val > 0:
+        #     val = torch.log(val)
+        return val
+
+class AffiNETy_graphSage_boltzmann_mlp3(nn.Module):
+    def __init__(
+        self,
+        pl_model=GraphSAGE(-1, 5, 3),
+        p_model=GraphSAGE(-1, 5, 3),
+        l_model=GraphSAGE(-1, 5, 3),
+        temperature=298.0,
+        pl_in=2,
+        p_in=2,
+        l_in=20,
+    ):
+        super(AffiNETy_graphSage_boltzmann_mlp3, self).__init__()
+        self.pl_model = pl_model
+        self.p_model = p_model
+        self.l_model = l_model
+        self.temperature = temperature
+
+        self.n1 = nn.Linear(pl_in + p_in + l_in, 128)
+        self.act1 = nn.ReLU()
+        self.n2 = nn.Linear(128, 128)
+        self.act2 = nn.ReLU()
+        self.n3 = nn.Linear(128, 64)
+        self.act3 = nn.ReLU()
+        self.n4 = nn.Linear(64, 1)
+
+    def model_output(self):
+        return "AffiNETy_graphSage_boltzmann_mlp3"
+
+    def forward(self, data, device):
+        """
+        Forward pass through the model.
+
+        Parameters:
+        - data_list: A list of Data objects, where each object contains fields for PL and L graphs.
+
+        Returns:
+        - torch.Tensor: The predicted output values.
+        """
+        pl_es = torch.zeros(len(data.pl_x), dtype=torch.float, device=device)
+        p_es = torch.zeros(len(data.p_x), dtype=torch.float, device=device)
+        l_es = torch.zeros(len(data.l_z), dtype=torch.float, device=device)
+        for i in range(len(data.l_z)):
+            batch = torch.zeros(len(data.l_x[i]), dtype=torch.int64, device=device)
+            out = self.l_model(
+                x=data.l_x[i].to(device),
+                edge_index=data.l_edge_index[i].to(device),
+                edge_attr=data.l_edge_attr[i].to(device),
+                batch=batch,
+            )
+            l_es[i] = torch.sum(out)
+        for i in range(len(data.pl_x)):
+            batch = torch.zeros(len(data.pl_x[i]), dtype=torch.int64, device=device)
+            out = self.pl_model(
+                x=data.pl_x[i].to(device),
+                edge_index=data.pl_edge_index[i].to(device),
+                edge_attr=data.pl_edge_attr[i].to(device),
+                batch=batch,
+            )
+            pl_es[i] = torch.sum(out)
+        for i in range(len(data.p_x)):
+            batch = torch.zeros(len(data.p_x[i]), dtype=torch.int64, device=device)
+            out = self.p_model(
+                x=data.p_x[i].to(device),
+                edge_index=data.p_edge_index[i].to(device),
+                edge_attr=data.p_edge_attr[i].to(device),
+                batch=batch,
+            )
+            p_es[i] = torch.sum(out)
+
+        pl_es, _ = torch.sort(pl_es)
+        p_es, _ = torch.sort(p_es)
+        l_es, _ = torch.sort(l_es)
+
+        pl_p_l = torch.cat((pl_es, p_es, l_es))
+        val = self.n4(
+            self.act3(self.n3(self.act2(self.n2(self.act1(self.n1(pl_p_l))))))
+        )
+        return val
 
 class AffiNETy_graphSage_GCN_boltzmann_mlp(nn.Module):
     def __init__(
@@ -630,6 +802,7 @@ class AffiNETy_graphSage_GCN_boltzmann_mlp(nn.Module):
         # if val > 0:
         #     val = torch.log(val)
         return val
+
 
 class AffiNETy_GCN_AtomicEnergy_boltzmann_mlp(nn.Module):
     def __init__(
@@ -958,7 +1131,7 @@ class AffiNETy_graphSage_AtomicEnergy_boltzmann_mlp(nn.Module):
         )
 
         # RT = 1.98720425864083 / 1000 * self.temperature  # (kcal * K) / (mol * K)
-        val = (pl_e_avg - p_e_avg - l_e_avg)
+        val = pl_e_avg - p_e_avg - l_e_avg
         # if val > 0:
         #     val = torch.log(val)
         return val
@@ -989,9 +1162,14 @@ def detach_except_min(tensor_list):
 class AffiNETy_ViSNet_boltzmann_mlp(nn.Module):
     def __init__(
         self,
-        pl_model=load_model(model_path),
-        p_model=load_model(model_path),
-        l_model=load_model(model_path),
+        pl_model=ViSNet(
+            cutoff=3.0,
+            hidden_channels=48,
+            num_heads=4,
+            num_layers=6,
+        ),
+        p_model=None,
+        l_model=None,
         temperature=298.0,
         pl_in=8,
         p_in=8,
@@ -1060,7 +1238,7 @@ class AffiNETy_ViSNet_boltzmann_mlp(nn.Module):
         # l_es = torch.zeros(len(data.l_z), dtype=torch.float, device='cpu')
         pl_es, p_es, l_es = [], [], []
         # with torch.autograd.graph.save_on_cpu():
-        print("\nsize:", len(data.pl_z[0]))
+        # print("\nsize:", len(data.pl_z[0]))
         # torch_gpu_memory()
         for i in range(len(data.l_z)):
             z = data.l_z[i].clone().to(device)
@@ -1085,8 +1263,8 @@ class AffiNETy_ViSNet_boltzmann_mlp(nn.Module):
             if verbose:
                 print(f"Start {i = }")
                 torch_gpu_memory()
-            z = data.pl_z[i].to(device)
-            pos = data.pl_pos[i].to(device)
+            z = data.pl_z[i].clone().to(device)
+            pos = data.pl_pos[i].clone().to(device)
             batch = torch.zeros(len(data.pl_z[i]), dtype=torch.int64, device=device)
             energies, forces = self.pl_model(
                 z,
@@ -1102,7 +1280,7 @@ class AffiNETy_ViSNet_boltzmann_mlp(nn.Module):
             # energies = energies.cpu()
             # pl_es[i] = energies
             pl_es.append(energies.view(-1))
-            pl_es = detach_except_min(pl_es)
+            # pl_es = detach_except_min(pl_es)
             del energies, forces
             del z
             del pos
@@ -1115,8 +1293,8 @@ class AffiNETy_ViSNet_boltzmann_mlp(nn.Module):
                 print(f"Start {i = }")
                 torch_gpu_memory()
             batch = torch.zeros(len(data.p_z[i]), dtype=torch.int64, device=device)
-            z = data.p_z[i].to(device)
-            pos = data.p_pos[i].to(device)
+            z = data.p_z[i].clone().to(device)
+            pos = data.p_pos[i].clone().to(device)
             energies, forces = self.pl_model(
                 z,
                 pos,
@@ -1125,7 +1303,7 @@ class AffiNETy_ViSNet_boltzmann_mlp(nn.Module):
             # energies = energies.cpu()
             # p_es[i] = energies
             p_es.append(energies.view(-1))
-            p_es = detach_except_min(p_es)
+            # p_es = detach_except_min(p_es)
             if verbose:
                 print("pre-delete")
                 torch_gpu_memory()
@@ -1140,9 +1318,9 @@ class AffiNETy_ViSNet_boltzmann_mlp(nn.Module):
         pl_es, _ = torch.sort(torch.cat(pl_es))
         p_es, _ = torch.sort(torch.cat(p_es))
         l_es, _ = torch.sort(torch.cat(l_es))
-        print(pl_es)
-        print(p_es)
-        print(l_es)
+        # print(f"{pl_es[0]= }")
+        # print(f"{p_es[0]= }")
+        # print(f"{l_es[0]= }")
 
         pl_e_avg = self.pl_relu3(
             self.pl_n3(self.pl_relu2(self.pl_n2(self.pl_relu1(self.pl_n1(pl_es)))))
@@ -1154,18 +1332,314 @@ class AffiNETy_ViSNet_boltzmann_mlp(nn.Module):
             self.l_n3(self.l_relu2(self.l_n2(self.l_relu1(self.l_n1(l_es)))))
         )
 
-        print(f"{pl_e_avg.item()} - ({p_e_avg.item()} + {l_e_avg.item()})")
-
         R = 1.98720425864083 / 1000
         RT = R * self.temperature  # (kcal * K) / (mol * K)
         # k_BT = 1.38e-23 * self.temperature
-        dS = -R * torch.log(data.l_num_rot_bonds.to(device))
-        # print(f"{dS = }")
-        val = (pl_e_avg - p_e_avg - l_e_avg + dS) / -RT
-        print(f"{val.item() = }")
-        if val > 0:
-            val = torch.log(val)
+        rot = data.l_num_rot_bonds.to(device)
+        if rot > 1 and rot < 200:
+            dS = -R * torch.log(rot.clone().detach())
+        else:
+            dS = torch.tensor([0.0], dtype=torch.float32, device=device)
+        val = pl_e_avg - p_e_avg - l_e_avg + dS  # * -1 #RT
+        min_threshold = 1e-14
+        clamped_val = torch.clamp(val, min=min_threshold)
+        # Compute log10, if val is extremely small, near 0, instead of letting it go to -inf
+        # convert from natural log (output of torch.log) to base-10 logarithm
+        log_val = torch.log(clamped_val) / torch.log(torch.tensor(10.0))
         return val
+
+
+class AffiNETy_ViSNet_boltzmann_mlp2(nn.Module):
+    def __init__(
+        self,
+        pl_model=ViSNet(
+            cutoff=3.0,
+            hidden_channels=48,
+            num_heads=4,
+            num_layers=6,
+        ),
+        p_model=None,
+        l_model=None,
+        temperature=298.0,
+        pl_in=8,
+        p_in=8,
+        l_in=20,
+    ):
+        super(AffiNETy_ViSNet_boltzmann_mlp2, self).__init__()
+        self.pl_model = pl_model
+        self.temperature = temperature
+
+        self.n1 = nn.Linear(pl_in + p_in + l_in + 1, 128)
+        self.act1 = nn.ReLU()
+        self.n2 = nn.Linear(128, 128)
+        self.act2 = nn.ReLU()
+        self.n3 = nn.Linear(128, 64)
+        self.act3 = nn.ReLU()
+        self.n4 = nn.Linear(64, 1)
+
+    def model_output(self):
+        return "AffiNETy_ViSNet_boltzmann_mlp2"
+
+    def forward(self, data, device, verbose=False):
+        """
+        Forward pass through the model.
+
+        Parameters:
+        - data_list: A list of Data objects, where each object contains fields for PL and L graphs.
+
+        Returns:
+        - torch.Tensor: The predicted output values.
+        """
+        # pl_es = torch.zeros(len(data.pl_z), dtype=torch.float, device=device)
+        # p_es = torch.zeros(len(data.p_z), dtype=torch.float, device=device)
+        # l_es = torch.zeros(len(data.l_z), dtype=torch.float, device=device)
+        # pl_es = torch.zeros(len(data.pl_z), dtype=torch.float, device='cpu')
+        # p_es = torch.zeros(len(data.p_z), dtype=torch.float, device='cpu')
+        # l_es = torch.zeros(len(data.l_z), dtype=torch.float, device='cpu')
+        pl_es, p_es, l_es = [], [], []
+        # with torch.autograd.graph.save_on_cpu():
+        # print("\nsize:", len(data.pl_z[0]))
+        # torch_gpu_memory()
+        for i in range(len(data.l_z)):
+            z = data.l_z[i].clone().to(device)
+            pos = data.l_pos[i].clone().to(device)
+            batch = torch.zeros(len(data.l_z[i]), dtype=torch.int64, device=device)
+            energies, forces = self.pl_model(
+                z,
+                pos,
+                batch,
+            )
+            l_es.append(energies.view(-1))
+            del energies, forces
+            del z
+            del pos
+        if verbose:
+            print(f"{l_es = }")
+            torch_gpu_memory()
+        for i in range(len(data.pl_z)):
+            if verbose:
+                print(f"Start {i = }")
+                torch_gpu_memory()
+            z = data.pl_z[i].clone().to(device)
+            pos = data.pl_pos[i].clone().to(device)
+            batch = torch.zeros(len(data.pl_z[i]), dtype=torch.int64, device=device)
+            energies, forces = self.pl_model(
+                z,
+                pos,
+                batch,
+            )
+            if verbose:
+                print("pre-delete")
+                torch_gpu_memory()
+            pl_es.append(energies.view(-1))
+            del energies, forces
+            del z
+            del pos
+        if verbose:
+            print(f"{pl_es = }")
+            torch_gpu_memory()
+        for i in range(len(data.p_z)):
+            if verbose:
+                print(f"Start {i = }")
+                torch_gpu_memory()
+            batch = torch.zeros(len(data.p_z[i]), dtype=torch.int64, device=device)
+            z = data.p_z[i].clone().to(device)
+            pos = data.p_pos[i].clone().to(device)
+            energies, forces = self.pl_model(
+                z,
+                pos,
+                batch,
+            )
+            p_es.append(energies.view(-1))
+            if verbose:
+                print("pre-delete")
+                torch_gpu_memory()
+            del energies, forces
+            del z
+            del pos
+        if verbose:
+            torch_gpu_memory()
+            print(f"{p_es = }")
+
+        pl_es, _ = torch.sort(torch.cat(pl_es))
+        p_es, _ = torch.sort(torch.cat(p_es))
+        l_es, _ = torch.sort(torch.cat(l_es))
+        # print(f"{pl_es[0]= }")
+        # print(f"{p_es[0]= }")
+        # print(f"{l_es[0]= }")
+
+        R = 1.98720425864083 / 1000
+        rot = data.l_num_rot_bonds.to(device)
+        if rot > 1 and rot < 200:
+            dS = -R * torch.log(rot.clone().detach())
+        else:
+            dS = torch.tensor([0.0], dtype=torch.float32, device=device)
+        # print(f"{dS = }")
+
+        pl_p_l_dS = torch.cat((pl_es, p_es, l_es, dS))
+        # print(f"{pl_p_l_dS = }")
+
+        val = self.n4(
+            self.act3(self.n3(self.act2(self.n2(self.act1(self.n1(pl_p_l_dS))))))
+        )
+        # print(val)
+        return val
+
+
+class AffiNETy_ViSNet_boltzmann_avg_Q(nn.Module):
+    def __init__(
+        self,
+        pl_model=ViSNet(
+            cutoff=3.0,
+            hidden_channels=48,
+            num_heads=4,
+            num_layers=6,
+        ),
+        p_model=None,
+        l_model=None,
+        temperature=298.0,
+        pl_in=8,
+        p_in=8,
+        l_in=20,
+    ):
+        """
+        Initialize the model with two ViSNet instances.
+
+        Parameters:
+        - visnet_pl: Pretrained ViSNet model for PL graphs.
+        - visnet_l: Pretrained ViSNet model for L graphs.
+
+        Objectives:
+        AffiNETy_PL_L is designed to take in N PL graphs, and M L graphs.
+        ViSNet will be evaluated on each graph with results.
+        data should be like:
+        the model will initially start with pre-trained ViSNet models,
+        but will use ViSNet on each pl set of graphs and ligand set of graphs
+        before performing a sum to predict the final ouptut value.
+        """
+        super(AffiNETy_ViSNet_boltzmann_avg_Q, self).__init__()
+        self.pl_model = pl_model
+        # self.p_model = p_model
+        # self.l_model = l_model
+        self.temperature = temperature
+
+    def model_output(self):
+        return "AffiNETy_ViSNet_boltzmann_avg_Q"
+
+    def forward(self, data, device, verbose=False):
+        """
+        Forward pass through the model.
+
+        Parameters:
+        - data_list: A list of Data objects, where each object contains fields for PL and L graphs.
+
+        Returns:
+        - torch.Tensor: The predicted output values.
+        """
+        # pl_es = torch.zeros(len(data.pl_z), dtype=torch.float, device=device)
+        # p_es = torch.zeros(len(data.p_z), dtype=torch.float, device=device)
+        # l_es = torch.zeros(len(data.l_z), dtype=torch.float, device=device)
+        # pl_es = torch.zeros(len(data.pl_z), dtype=torch.float, device='cpu')
+        # p_es = torch.zeros(len(data.p_z), dtype=torch.float, device='cpu')
+        # l_es = torch.zeros(len(data.l_z), dtype=torch.float, device='cpu')
+        pl_es, p_es, l_es = [], [], []
+        # with torch.autograd.graph.save_on_cpu():
+        # print("\nsize:", len(data.pl_z[0]))
+        # torch_gpu_memory()
+        for i in range(len(data.l_z)):
+            z = data.l_z[i].clone().to(device)
+            pos = data.l_pos[i].clone().to(device)
+            batch = torch.zeros(len(data.l_z[i]), dtype=torch.int64, device=device)
+            energies, forces = self.pl_model(
+                z,
+                pos,
+                batch,
+            )
+            # energies = energies.cpu()
+            # l_es[i] = energies
+            l_es.append(energies.view(-1))
+            del energies, forces
+            del z
+            del pos
+            # torch.cuda.empty_cache()  # Clears cached memory
+        if verbose:
+            print(f"{l_es = }")
+            torch_gpu_memory()
+        for i in range(len(data.pl_z)):
+            if verbose:
+                print(f"Start {i = }")
+                torch_gpu_memory()
+            z = data.pl_z[i].clone().to(device)
+            pos = data.pl_pos[i].clone().to(device)
+            batch = torch.zeros(len(data.pl_z[i]), dtype=torch.int64, device=device)
+            energies, forces = self.pl_model(
+                z,
+                pos,
+                batch,
+            )
+            if verbose:
+                print("pre-delete")
+                torch_gpu_memory()
+            # energies = energies.cpu()
+            # cannot store grads in cpu memory or gpu completely... Using detach removes the model graphs, effectively not allowing backprop to update these submodels.
+            # energies = energies.detach().cpu()
+            # energies = energies.cpu()
+            # pl_es[i] = energies
+            pl_es.append(energies.view(-1))
+            # pl_es = detach_except_min(pl_es)
+            del energies, forces
+            del z
+            del pos
+            # torch.cuda.empty_cache()  # Clears cached memory
+        if verbose:
+            print(f"{pl_es = }")
+            torch_gpu_memory()
+        for i in range(len(data.p_z)):
+            if verbose:
+                print(f"Start {i = }")
+                torch_gpu_memory()
+            batch = torch.zeros(len(data.p_z[i]), dtype=torch.int64, device=device)
+            z = data.p_z[i].clone().to(device)
+            pos = data.p_pos[i].clone().to(device)
+            energies, forces = self.pl_model(
+                z,
+                pos,
+                batch,
+            )
+            # energies = energies.cpu()
+            # p_es[i] = energies
+            p_es.append(energies.view(-1))
+            # p_es = detach_except_min(p_es)
+            if verbose:
+                print("pre-delete")
+                torch_gpu_memory()
+            del energies, forces
+            del z
+            del pos
+            # torch.cuda.empty_cache()  # Clears cached memory
+        if verbose:
+            torch_gpu_memory()
+            print(f"{p_es = }")
+
+        pl_es = torch.cat(pl_es)
+        p_es = torch.cat(p_es)
+        l_es = torch.cat(l_es)
+
+        pl_e_avg = torch.mean(boltzmannFactorRescaling(pl_es))
+        p_e_avg = torch.mean(boltzmannFactorRescaling(p_es))
+        l_e_avg = torch.mean(boltzmannFactorRescaling(l_es))
+
+        RT = 1.98720425864083 / 1000 * self.temperature  # (kcal * K) / (mol * K)
+        val = torch.abs(pl_e_avg - p_e_avg - l_e_avg) / RT
+        # print(f"{val = }")
+        min_threshold = 1e-16
+        clamped_val = torch.clamp(val, min=min_threshold)
+        # Compute log10, if val is extremely small, near 0, instead of letting it go to -inf
+        # convert from natural log (output of torch.log) to base-10 logarithm
+        # print(f"{clamped_val = }")
+        log_val = torch.log(clamped_val) / torch.log(torch.tensor(10.0))
+        # print(f"{log_val = }")
+        return log_val
 
 
 class AffiNETy_equivariant_torchmdnet_boltzmann_mlp(nn.Module):
@@ -1205,21 +1679,18 @@ class AffiNETy_equivariant_torchmdnet_boltzmann_mlp(nn.Module):
         self.pl_n2 = nn.Linear(32, 32)
         self.pl_relu2 = nn.ReLU()
         self.pl_n3 = nn.Linear(32, 1)
-        self.pl_relu3 = nn.ReLU()
 
         self.p_n1 = nn.Linear(p_in, 32)
         self.p_relu1 = nn.ReLU()
         self.p_n2 = nn.Linear(32, 32)
         self.p_relu2 = nn.ReLU()
         self.p_n3 = nn.Linear(32, 1)
-        self.p_relu3 = nn.ReLU()
 
         self.l_n1 = nn.Linear(l_in, 32)
         self.l_relu1 = nn.ReLU()
         self.l_n2 = nn.Linear(32, 32)
         self.l_relu2 = nn.ReLU()
         self.l_n3 = nn.Linear(32, 1)
-        self.l_relu3 = nn.ReLU()
 
     def model_output(self):
         return "AffiNETy_equivariant_torchmdnet_boltzmann_mlp"
@@ -1242,7 +1713,7 @@ class AffiNETy_equivariant_torchmdnet_boltzmann_mlp(nn.Module):
         # l_es = torch.zeros(len(data.l_z), dtype=torch.float, device='cpu')
         pl_es, p_es, l_es = [], [], []
         # with torch.autograd.graph.save_on_cpu():
-        print("\nsize:", len(data.pl_z[0]))
+        # print("\nsize:", len(data.pl_z[0]))
         # torch_gpu_memory()
         for i in range(len(data.l_z)):
             z = data.l_z[i].clone().to(device)
@@ -1317,23 +1788,32 @@ class AffiNETy_equivariant_torchmdnet_boltzmann_mlp(nn.Module):
         p_es, _ = torch.sort(torch.cat(p_es))
         l_es, _ = torch.sort(torch.cat(l_es))
 
-        pl_e_avg = self.pl_relu3(
-            self.pl_n3(self.pl_relu2(self.pl_n2(self.pl_relu1(self.pl_n1(pl_es)))))
+        # pl_e_avg = self.pl_relu3(
+        #     self.pl_n3(self.pl_relu2(self.pl_n2(self.pl_relu1(self.pl_n1(pl_es)))))
+        # )
+        # p_e_avg = self.p_relu3(
+        #     self.p_n3(self.p_relu2(self.p_n2(self.p_relu1(self.p_n1(p_es)))))
+        # )
+        # l_e_avg = self.l_relu3(
+        #     self.l_n3(self.l_relu2(self.l_n2(self.l_relu1(self.l_n1(l_es)))))
+        # )
+        pl_e_avg = self.pl_n3(
+            self.pl_relu2(self.pl_n2(self.pl_relu1(self.pl_n1(pl_es))))
         )
-        p_e_avg = self.p_relu3(
-            self.p_n3(self.p_relu2(self.p_n2(self.p_relu1(self.p_n1(p_es)))))
-        )
-        l_e_avg = self.l_relu3(
-            self.l_n3(self.l_relu2(self.l_n2(self.l_relu1(self.l_n1(l_es)))))
-        )
+        p_e_avg = self.p_n3(self.p_relu2(self.p_n2(self.p_relu1(self.p_n1(p_es)))))
+
+        l_e_avg = self.l_n3(self.l_relu2(self.l_n2(self.l_relu1(self.l_n1(l_es)))))
 
         # print(f"{pl_e_avg} - ({p_e_avg + l_e_avg})")
 
         R = 1.98720425864083 / 1000
         RT = R * self.temperature  # (kcal * K) / (mol * K)
         # k_BT = 1.38e-23 * self.temperature
-        # dS = -R * torch.log(data.l_num_rot_bonds.to(device))
-        print(f"{dS = }")
+        rot = data.l_num_rot_bonds.to(device)
+        if rot > 1 and rot < 200:
+            dS = -R * torch.log(rot.clone().detach())
+        else:
+            dS = torch.tensor([0.0], dtype=torch.float32, device=device)
         val = (pl_e_avg - p_e_avg - l_e_avg) / -RT
         print(f"{val = }")
         if val > 0:
@@ -1698,10 +2178,10 @@ class AffiNETy:
                 print("No pre-trained model found... Random start")
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         # print(self.model.parameters())
-        if verbose:
-            for name, param in self.model.named_parameters():
-                if param.requires_grad:
-                    print(name, param.data)
+        # if verbose:
+        #     for name, param in self.model.named_parameters():
+        #         if param.requires_grad:
+        #             print(name, param.data)
         criterion = nn.MSELoss()
         train_dataset = self.dataset[: int(len(self.dataset) * split_percent)]
         test_dataset = self.dataset[int(len(self.dataset) * split_percent) :]
@@ -1757,8 +2237,8 @@ class AffiNETy:
                 if verbose or n == 2:
                     print(preds)
                     print(true)
-                if verbose:
-                    torch_gpu_memory()
+                # if verbose:
+                #     torch_gpu_memory()
                 loss = criterion(preds, true.to(device))
                 loss.backward()
                 optimizer.step()
@@ -1769,21 +2249,21 @@ class AffiNETy:
 
             self.model.eval()
             with torch.no_grad():
-                for batch in test_loader:
+                for batch in tqdm(
+                    test_loader,
+                    total=len(test_loader),
+                    desc=f"Epoch {epoch+1}/{epochs} [Eval]",
+                ):
                     preds = []
                     true = []
-                    for batch in tqdm(
-                        test_loader,
-                        total=len(test_loader),
-                        desc=f"Epoch {epoch+1}/{epochs} [Eval]",
-                    ):
+                    for data in batch.to_data_list():
                         # data = data.to(device)
                         out = self.model(data, device)
                         preds.append(out.view(-1))
                         true.append(data.y.view(-1))
                     preds = torch.cat(preds)
                     true = torch.cat(true)
-                    loss = criterion(preds, true)
+                    loss = criterion(preds, true.to(device))
                     eval_loss += loss.item()
             eval_loss /= len(test_loader)
 

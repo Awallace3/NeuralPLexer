@@ -1,11 +1,35 @@
 ============
-Installation
+Organization
 ============
+The work on this fork primarily focuses on using NeuralPLexer outputted
+structures to predict binding affinities using the PDBBind dataset with
+relevant files located in `./sf/`. Additionally, to generate the ligand
+conformers needed for the model, please use this fork of the
+torsional-diffusion repo https://github.com/Awallace3/torsional-diffusion.
+
+1. `./sf/pl.py` is used to generate PL complex conformers
+2. `./sf/protein.py` is used to generate P conformers
+3. `./sf/torsional_diffusion_smiles_csv.py.py` is used to generate L
+   conformers. Note that you must clone and install a forked version of the
+   torsional-diffusion code and install the pre-trained model.
+   https://github.com/Awallace3/torsional-diffusion
+4. `./sf/data_loader.py` creates training and validation data into a dataloader
+   format
+5. `./sf/train_affinety.py` will train models. To train specific models,
+   different arguments into `AffiNETy()` are required. Some examples to
+   re-create models in the report are in `./sf/train_affinety_boltz_avg.py`,
+   `./sf/train_affinety_boltz_avg_Q.py`, and `./sf/train_affinety_boltz_mlp.py`
+
+
+
+==============================
+Installation - (Group Members)
+==============================
 
  1. Clone my fork
  2. Create env
  3. Install dev version
- 4. copy my zip file for pre-trained models from my share directory on hive
+ 4. copy my zip file for pre-trained models from my share directory
  6. Run first example
 
 .. code-block:: bash
