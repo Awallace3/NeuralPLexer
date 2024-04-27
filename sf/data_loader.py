@@ -110,7 +110,7 @@ def main():
     cleanup_input_labels()
     # return
     AffiNETy_torchmd_dataset(
-        root=f"data_n_8_full_{v}",
+        root=f"data_n_8_full_{v}_ext",
         dataset=v,
         NUM_THREADS=NUM_THREADS,
         pl_dir=pl_dir,

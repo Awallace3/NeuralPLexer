@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=AN-v-mlp2
+#SBATCH --job-name=AN-v-mlp
 #SBATCH -N1 -n12
 #SBATCH --mem-per-cpu=8G #memory per core
-#SBATCH --time=12:00:00
+#SBATCH --time=16:00:00
 #SBATCH -pice-gpu
 #SBATCH --gres=gpu:H100:1
 #SBATCH --output=outs/AN-v-mlp2.out
