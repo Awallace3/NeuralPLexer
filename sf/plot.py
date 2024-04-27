@@ -40,6 +40,7 @@ def plot_eval_casf_graphsage_ds():
         # plt.legend([f'MAE: {mae:.3f}', f'RMSE: {rmse:.3f}'])
         # plt.legend([f'MAE: {mae:.3f}', f'RMSE: {rmse:.3f}'])
 
+        plt.plot(pred, true,"r.")
         plt.plot(np.unique(true), np.poly1d(np.polyfit(pred, true, 1))(np.unique(true)))
         plt.text(9., 2.5, "RMSE = "+ str(math.sqrt(mean_squared_error(true, pred)))[:5] )
         plt.text(9., 3., "$R^{2}$ = "+ str(r2_score(true, pred))[:5])
@@ -74,6 +75,7 @@ def plot_eval_casf_torchmd_ds():
         # plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], 'r--', lw=2, label='Diagonal Reference')  # Diagonal reference line
         # plt.legend()
 
+        plt.plot(pred, true,"r.")
         plt.plot(np.unique(true), np.poly1d(np.polyfit(pred, true, 1))(np.unique(true)))
         plt.text(9., 2.5, "RMSE = "+ str(math.sqrt(mean_squared_error(true, pred)))[:5] )
         plt.text(9., 3., "$R^{2}$ = "+ str(r2_score(true, pred))[:5])
