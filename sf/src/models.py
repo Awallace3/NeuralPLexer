@@ -2309,10 +2309,9 @@ class AffiNETy:
             true = []
             for batch in data_loader:
                 for data in batch.to_data_list():
-                    data = data.to(device)
                     out = self.model(data, device)
                     preds.append(out.view(-1))
-                    true.append(data.y.view(-1))
+                    true.append(data.y.to(device).view(-1))
         preds = torch.cat(preds)
         true = torch.cat(true)
         results = result = torch.cat((preds.unsqueeze(0), true.unsqueeze(0)), dim=0)

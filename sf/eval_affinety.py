@@ -2,10 +2,11 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from src.dataset import AffiNETy_dataset, AffiNETy_PL_P_L_dataset
+from src.dataset import AffiNETy_dataset, AffiNETy_torchmd_dataset
 from src import models
 import os
 import argparse
+from torch_geometric.nn.models import ViSNet, GraphSAGE, GCN
 
 print("imports done!\n")
 
@@ -35,6 +36,7 @@ else:
 
 def main():
     num_confs_protein=8
+    # AffiNETy_dataset(root)
     ds = AffiNETy_dataset(
         root=f"data_n_{num_confs_protein}_{v}",
         dataset=v,
@@ -47,12 +49,15 @@ def main():
         ensure_processed=False,
     )
     trained_models = [
-            # models.AffiNETy_graphSage_boltzmann_avg,
+            models.AffiNETy_graphSage_boltzmann_avg,
             models.AffiNETy_graphSage_boltzmann_avg_Q,
             models.AffiNETy_graphSage_boltzmann_mlp,
+            models.AffiNETy_graphSage_boltzmann_mlp2,
+            models.AffiNETy_graphSage_boltzmann_mlp3,
     ]
     results = {}
     for n, i in enumerate(trained_models):
+        print(n, i)
         m = models.AffiNETy(
             dataset=ds,
             model=i,
@@ -70,8 +75,59 @@ def main():
         if n == 0:
             results['CASF2016'] = b_mlp_results[1, :]
         results[m.model.model_output()] = b_mlp_results[0, :]
+
     df = pd.DataFrame(results)
-    df.to_csv("./outs/eval_casf2.csv")
+    df.to_csv("./outs/eval_casf_graphsage_ds.csv")
+    results = {}
+
+    ds2 = AffiNETy_torchmd_dataset(
+        root=f"data_n_{num_confs_protein}_full_{v}",
+        dataset=v,
+        NUM_THREADS=NUM_THREADS,
+        pl_dir=pl_dir,
+        p_dir=p_dir,
+        l_pkl=l_pkl,
+        power_ranking_file=power_ranking_file_pkl,
+        num_confs_protein=num_confs_protein,
+        ensure_processed=False,
+    )
+    trained_models_torchmd_ds = [
+            models.AffiNETy_ViSNet_boltzmann_mlp,
+            models.AffiNETy_ViSNet_boltzmann_mlp2,
+    ]
+    for n, i in enumerate(trained_models_torchmd_ds):
+        print(n, i)
+        m = models.AffiNETy(
+            dataset=ds2,
+            model=i,
+            pl_model=ViSNet(
+                            lmax=1,
+                            cutoff=3.0,
+                            hidden_channels=12,
+                            num_heads=4,
+                            num_layers=6,
+                            trainable_vecnorm=False,
+                            num_rbf=16,
+                            trainable_rbf=False,
+                           # max_num_neighbors=42,
+                            vertex=False,
+                            ),
+            pl_in=num_confs_protein,
+            p_in=num_confs_protein,
+            num_workers=NUM_THREADS,
+            use_GPU=True,
+            lr=1e-4,
+        )
+        b_mlp_results = m.eval_casf(
+            batch_size=2,
+            pre_trained_model='prev',
+        )
+        print(b_mlp_results)
+        if n == 0:
+            results['CASF2016'] = b_mlp_results[1, :]
+        results[m.model.model_output()] = b_mlp_results[0, :]
+    df = pd.DataFrame(results)
+    df.to_csv("./outs/eval_casf_torchmd_ds.csv")
     return
 
 

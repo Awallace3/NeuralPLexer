@@ -21,8 +21,8 @@ parser.add_argument(
 args = parser.parse_args()
 print(f"PDBBIND setting: {args.PDBBIND}")
 
-PDBBIND = not args.PDBBIND
-# PDBBIND = args.PDBBIND
+# PDBBIND = not args.PDBBIND
+PDBBIND = args.PDBBIND
 if PDBBIND:
     pl_dir = "/storage/ice1/7/3/awallace43/pdb_gen/pl"
     p_dir = "/storage/ice1/7/3/awallace43/pdb_gen/p"
@@ -159,6 +159,7 @@ def train_ViSNet_models(num_confs_protein):
         dataset=ds,
         # model=models.AffiNETy_ViSNet_boltzmann_mlp,
         model=models.AffiNETy_ViSNet_boltzmann_mlp2,
+        # model=models.AffiNETy_ViSNet_boltzmann_mlp,
         # model=models.AffiNETy_ViSNet_boltzmann_avg_Q,
         pl_model=ViSNet(
                         lmax=1,

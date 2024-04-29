@@ -140,7 +140,7 @@ def train_torchMD_models(num_confs_protein):
     )
 
 def train_ViSNet_models(num_confs_protein):
-    from torchmdnet.models.model import load_model
+    # from torchmdnet.models.model import load_model
     ds = AffiNETy_torchmd_dataset(
         root=f"data_n_{num_confs_protein}_full_{v}",
         dataset=v,
@@ -152,7 +152,7 @@ def train_ViSNet_models(num_confs_protein):
         num_confs_protein=num_confs_protein,
         ensure_processed=False,
     )
-    model_path = "/storage/ice1/7/3/awallace43/torchmd_data/epoch=2139-val_loss=0.2543-test_loss=0.2317.ckpt"
+    # model_path = "/storage/ice1/7/3/awallace43/torchmd_data/epoch=2139-val_loss=0.2543-test_loss=0.2317.ckpt"
     # model_path = "/home/hice1/awallace43/scratch/torchmd_data/ani/ANI1-equivariant_transformer/epoch=359-val_loss=0.0004-test_loss=0.0120.ckpt"
     # model_path = "/storage/ice1/7/3/awallace43/torchmd_data/epoch=649-val_loss=0.0003-test_loss=0.0059.ckpt"
     m = models.AffiNETy(
