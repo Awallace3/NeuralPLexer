@@ -7,19 +7,19 @@ relevant files located in `./sf/`. Additionally, to generate the ligand
 conformers needed for the model, please use this fork of the
 torsional-diffusion repo https://github.com/Awallace3/torsional-diffusion.
 
-1. `./sf/pl.py` is used to generate PL complex conformers
-2. `./sf/protein.py` is used to generate P conformers
-3. `./sf/torsional_diffusion_smiles_csv.py.py` is used to generate L
+1. `./sf/pl.py <./sf/pl.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/pl.py>`_ is used to generate PL complex conformers
+2. `./sf/protein.py <./sf/protein.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/protein.py>`_ is used to generate P conformers
+3. `./sf/torsional_diffusion_smiles_csv.py <./sf/torsional_diffusion_smiles_csv.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/torsional_diffusion_smiles_csv.py>`_ is used to generate L
    conformers. Note that you must clone and install a forked version of the
    torsional-diffusion code and install the pre-trained model.
    https://github.com/Awallace3/torsional-diffusion
-4. `./sf/data_loader.py` creates training and validation data into a dataloader
+4. `./sf/data_loader.py <./sf/data_loader.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/data_loader.py>`_ creates training and validation data into a dataloader
    format
-5. `./sf/train_affinety.py` will train models. To train specific models,
+5. `./sf/train_affinety.py <./sf/train_affinety.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/train_affinety.py>`_ will train models. To train specific models,
    different arguments into `AffiNETy()` are required. Some examples to
-   re-create models in the report are in `./sf/train_affinety_boltz_avg.py`,
-   `./sf/train_affinety_boltz_avg_Q.py`, and `./sf/train_affinety_boltz_mlp.py`
-
+   re-create models in the report are in `./sf/train_affinety_boltz_avg.py <./sf/train_affinety.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/train_affinety_boltz_avg.py>`_ ,
+   `./sf/train_affinety_boltz_avg_Q.py <./sf/train_affinety_boltz_avg_Q.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/train_affinety_boltz_avg_Q.py>`_, and `./sf/train_affinety_boltz_mlp.py  <./sf/train_affinety_boltz_avg_Q.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/train_affinety_boltz_mlp.py>`_
+6. `./sf/src/models.py <./sf/src/models.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/src/models.py>`_ contains the definitions for all models investigated for the report.
 
 
 ==============================
