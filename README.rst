@@ -5,7 +5,7 @@ The work on this fork primarily focuses on using NeuralPLexer outputted
 structures to predict binding affinities using the PDBBind dataset with
 relevant files located in `./sf/`. Additionally, to generate the ligand
 conformers needed for the model, please use this fork of the
-torsional-diffusion repo https://github.com/Awallace3/torsional-diffusion.
+torsional-diffusion repo https://github.com/shehan807/torsional-diffusion.
 
 1. `./sf/pl.py <./sf/pl.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/pl.py>`_ is used to generate PL complex conformers
 2. `./sf/protein.py <./sf/protein.py https://github.com/Awallace3/NeuralPLexer/tree/main/sf/protein.py>`_ is used to generate P conformers
