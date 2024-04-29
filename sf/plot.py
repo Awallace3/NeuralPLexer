@@ -63,18 +63,10 @@ def plot_eval_casf_torchmd_ds():
     print(spearman)
 
     for n, col in enumerate(model_prediction_columns):
-        # Calculate the MAE and RMSE
         true = df[ref_column].values
         pred = df[col].values
-        # mae = mean_absolute_error(y_true, y_pred)
-        # rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-
-        # Plot the data
+        print(true[0], pred[0])
         plt.figure()
-        # plt.scatter(y_true, y_pred, edgecolor='k', facecolor='none')
-        # plt.plot([min(y_true), max(y_true)], [min(y_true), max(y_true)], 'r--', lw=2, label='Diagonal Reference')  # Diagonal reference line
-        # plt.legend()
-
         plt.plot(pred, true,"r.")
         plt.plot(np.unique(true), np.poly1d(np.polyfit(pred, true, 1))(np.unique(true)))
         plt.text(9., 2.5, "RMSE = "+ str(math.sqrt(mean_squared_error(true, pred)))[:5] )
